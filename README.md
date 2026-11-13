@@ -246,7 +246,7 @@ npm i -g vercel
 vercel
 ```
 
-The root `vercel.json` automatically builds the React 19 frontend into `frontend/dist` and routes serverless API requests to `/api/index.py`.
+The root `vercel.json` deploys the repository with **Vercel Services**: building the React 19 SPA (`frontend`) and running the FastAPI backend (`backend`) as native, unified services on a single shared domain.
 
 ---
 
