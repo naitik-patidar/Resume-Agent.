@@ -8,13 +8,12 @@ import {
   Eye,
   EyeOff,
   ClipboardPaste,
-  Sparkles,
-  Server,
   Zap,
   RotateCcw,
-  Cpu,
   ArrowRight,
   Check,
+  Server,
+  Terminal,
 } from 'lucide-react';
 import {
   getUserSettings,
@@ -27,14 +26,15 @@ import {
 import { UserSettings, VerifyKeyResponse } from '../types';
 
 interface ApiKeySettingsPageProps {
-  onNavigateToAudit?: () => void;
+  onNavigateToProject?: () => void;
 }
 
-export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNavigateToAudit }) => {
+export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNavigateToProject }) => {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
+  const [keyType, setKeyType] = useState<'public' | 'ollama'>('public');
   const [showKey, setShowKey] = useState<boolean>(false);
 
-  // Advanced backend URL setting (for Vercel + remote backend setups)
+  // Advanced backend URL setting
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [apiBaseUrl, setApiBaseUrl] = useState<string>('');
   const [backendTestStatus, setBackendTestStatus] = useState<{
@@ -51,13 +51,35 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
   // Load existing settings on mount
   useEffect(() => {
     const current = getUserSettings();
-    setSettings({
-      ...current,
-      provider: 'gemini',
-      model: 'gemini-2.5-flash',
-    });
+    setSettings(current);
     setApiBaseUrl(current.apiBaseUrl || '');
+    if (current.provider === 'ollama') {
+      setKeyType('ollama');
+    } else {
+      setKeyType('public');
+    }
   }, []);
+
+  const handleKeyTypeChange = (type: 'public' | 'ollama') => {
+    setKeyType(type);
+    setVerificationResult(null);
+    if (type === 'ollama') {
+      setSettings((prev) => ({
+        ...prev,
+        provider: 'ollama',
+        model: prev.model && prev.provider === 'ollama' ? prev.model : 'gemma4:latest',
+        baseUrl: prev.baseUrl || 'http://127.0.0.1:11434',
+        isVerified: false,
+      }));
+    } else {
+      setSettings((prev) => ({
+        ...prev,
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        isVerified: false,
+      }));
+    }
+  };
 
   const handlePasteKey = async () => {
     try {
@@ -72,11 +94,11 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
   };
 
   const handleVerifyKey = async () => {
-    if (!settings.apiKey || !settings.apiKey.trim()) {
+    if (settings.provider !== 'ollama' && (!settings.apiKey || !settings.apiKey.trim())) {
       setVerificationResult({
         valid: false,
-        provider: 'gemini',
-        message: 'Please enter your Google Gemini API key to test.',
+        provider: settings.provider,
+        message: 'Please enter your API key to test.',
         error: 'Empty API key',
       });
       return;
@@ -86,17 +108,15 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
     setVerificationResult(null);
     try {
       const result = await verifyApiKey(
-        'gemini',
+        settings.provider,
         settings.apiKey.trim(),
-        'gemini-2.5-flash',
+        settings.model || (settings.provider === 'ollama' ? 'gemma4:latest' : 'gemini-2.5-flash'),
         settings.baseUrl
       );
       setVerificationResult(result);
       if (result.valid) {
         const updated: UserSettings = {
           ...settings,
-          provider: 'gemini',
-          model: 'gemini-2.5-flash',
           isVerified: true,
           lastVerifiedAt: new Date().toLocaleTimeString(),
         };
@@ -106,7 +126,7 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
     } catch (err: unknown) {
       setVerificationResult({
         valid: false,
-        provider: 'gemini',
+        provider: settings.provider,
         message: err instanceof Error ? err.message : 'Connection test failed',
         error: String(err),
       });
@@ -136,257 +156,333 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
   const handleSave = () => {
     const updated: UserSettings = {
       ...settings,
-      provider: 'gemini',
-      model: 'gemini-2.5-flash',
       apiBaseUrl: apiBaseUrl.trim() || undefined,
     };
     saveUserSettings(updated);
     setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    setTimeout(() => {
+      setSaveSuccess(false);
+      if (onNavigateToProject) {
+        onNavigateToProject();
+      }
+    }, 1200);
   };
 
   const handleResetToDefaults = () => {
     clearUserSettings();
     setSettings(DEFAULT_SETTINGS);
+    setKeyType('public');
     setApiBaseUrl('');
     setVerificationResult(null);
   };
 
+  const isGemini = settings.provider === 'gemini';
+  const isOpenAI = settings.provider === 'openai';
+
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-8 sm:py-12 animate-fade-in font-sans">
-      {/* Top Banner / Heading */}
-      <div className="text-center max-w-3xl mx-auto mb-10">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-3">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Google Gemini Cloud Intelligence</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-          Enter Your API Key
-        </h1>
-        <p className="mt-3 text-base text-slate-300 leading-relaxed">
-          Provide your personal <span className="text-indigo-400 font-semibold">Google Gemini API key</span> to unlock
-          live, high-depth evaluation by all 7 adversarial hiring agents directly on the web.
-        </p>
-      </div>
-
-      {/* Active Model Status Card */}
-      <div className="mb-8 p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center space-x-3.5">
-          <div
-            className={`w-11 h-11 rounded-xl flex items-center justify-center ring-1 ring-white/10 ${
-              settings.apiKey
-                ? 'bg-gradient-to-tr from-emerald-500 to-teal-400 text-white shadow-lg shadow-emerald-500/20'
-                : 'bg-slate-800 text-slate-400'
-            }`}
-          >
-            <Cpu className="w-6 h-6" />
+    <div className="w-full bg-[#FAF6F0] text-slate-900 font-sans pb-20 selection:bg-[#c9b7f5] selection:text-black">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10">
+        
+        {/* Top Header Card */}
+        <div className="mb-8 text-center max-w-2xl mx-auto">
+          <div className="inline-flex items-center space-x-1.5 px-3 py-1 bg-[#FEF08A] border-2 border-black rounded-lg text-[11px] font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000] mb-3">
+            <Key className="w-3.5 h-3.5 text-black" />
+            <span>SUBMIT YOUR API KEY</span>
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-slate-400">Active Model:</span>
-              <span className="text-base font-bold text-white tracking-tight">
-                Google Gemini (gemini-2.5-flash)
-              </span>
-              {settings.apiKey ? (
-                <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Key Connected</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium">
-                  <span>No Key Entered (Offline Fallback)</span>
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {settings.apiKey
-                ? 'All 7 sequential review agents and the Resume Rewriter Agent will use your key.'
-                : 'Enter your free Gemini key below to enable full AI model capability.'}
-            </p>
-          </div>
+          <h1 className="text-3xl sm:text-4xl font-black text-black tracking-tight">
+            Connect Your AI Engine
+          </h1>
+          <p className="mt-2 text-sm text-slate-700 font-medium">
+            Submit your personal <strong>Public API Key</strong> (Google Gemini or OpenAI) or connect your <strong>Local Ollama API</strong> to run evaluations directly from your browser.
+          </p>
         </div>
 
-        {onNavigateToAudit && (
-          <button
-            onClick={onNavigateToAudit}
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02]"
-          >
-            <span>Proceed to Audit</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Section */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Main Card: Enter API Key */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:p-7 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-base font-bold text-slate-100 flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
-                  <Key className="w-4 h-4" />
-                </div>
-                <span>Enter Your API Key</span>
-              </label>
-              <a
-                href="https://aistudio.google.com/app/apikey"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center space-x-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-semibold"
-              >
-                <span>Get Free Key</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-
-            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-              Paste your Google Gemini API key below. You can obtain a free key from Google AI Studio in less than a minute.
-            </p>
-
-            {/* Input Field with Show/Hide and Paste */}
-            <div className="relative flex items-center">
-              <div className="absolute left-3.5 text-slate-500 pointer-events-none">
-                <Key className="w-4 h-4" />
-              </div>
-              <input
-                type={showKey ? 'text' : 'password'}
-                value={settings.apiKey}
-                onChange={(e) => {
-                  setSettings({ ...settings, apiKey: e.target.value, isVerified: false });
-                  setVerificationResult(null);
-                }}
-                placeholder="AIzaSy..."
-                className="w-full pl-10 pr-24 py-3.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono tracking-wider shadow-inner"
-              />
-              <div className="absolute right-2 flex items-center space-x-1">
-                <button
-                  type="button"
-                  onClick={handlePasteKey}
-                  title="Paste from clipboard"
-                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-                >
-                  <ClipboardPaste className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  title={showKey ? 'Hide key' : 'Show key'}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-                >
-                  {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Verify & Test Button */}
-            <div className="mt-4 flex flex-wrap items-center gap-3">
+        {/* Main Form Container (Neo-Brutalist Folder Style) */}
+        <div className="bg-white border-2 border-black rounded-3xl p-6 sm:p-10 shadow-[6px_6px_0px_0px_#000] relative">
+          
+          {/* Key Type Selector Tabs */}
+          <div className="mb-6 pb-6 border-b-2 border-black">
+            <span className="text-xs font-black uppercase tracking-wider text-slate-700 block mb-2.5">
+              1. Choose API Type:
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option A: Public API */}
               <button
                 type="button"
-                onClick={handleVerifyKey}
-                disabled={isVerifying}
-                className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition-all shadow-sm disabled:opacity-50"
-              >
-                <Zap className={`w-3.5 h-3.5 ${isVerifying ? 'animate-spin text-indigo-400' : 'text-amber-400'}`} />
-                <span>{isVerifying ? 'Testing Connection...' : 'Test Connection / Verify Key'}</span>
-              </button>
-              <span className="text-xs text-slate-500">
-                Performs a lightweight 1-token handshake with Google Gemini.
-              </span>
-            </div>
-
-            {/* Verification Result Feedback */}
-            {verificationResult && (
-              <div
-                className={`mt-4 p-4 rounded-xl border text-xs flex items-start space-x-3 animate-fade-in ${
-                  verificationResult.valid
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                    : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                onClick={() => handleKeyTypeChange('public')}
+                className={`p-4 rounded-2xl border-2 text-left transition-all flex items-start space-x-3 ${
+                  keyType === 'public'
+                    ? 'bg-[#C9B7F5] border-black shadow-[3px_3px_0px_0px_#000]'
+                    : 'bg-[#FAF6F0] border-black/40 hover:border-black text-slate-700'
                 }`}
               >
-                {verificationResult.valid ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                )}
-                <div className="flex-1">
-                  <p className="font-semibold">{verificationResult.message}</p>
-                  {verificationResult.latency_ms !== undefined && (
-                    <p className="text-[11px] text-emerald-400/80 mt-0.5">
-                      Handshake latency: {verificationResult.latency_ms}ms • Model: {verificationResult.model || 'gemini-2.5-flash'}
-                    </p>
-                  )}
-                  {verificationResult.error && (
-                    <p className="text-[11px] text-rose-400/80 mt-1 font-mono">
-                      Error details: {verificationResult.error}
-                    </p>
-                  )}
+                <div className="w-9 h-9 rounded-xl bg-white border-2 border-black flex items-center justify-center shrink-0">
+                  <Key className="w-4 h-4 text-black" />
                 </div>
-              </div>
-            )}
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-black text-sm text-black">Public Cloud API</span>
+                    <span className="px-1.5 py-0.2 bg-[#FEF08A] border border-black rounded text-[9px] font-black uppercase">
+                      Recommended
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-700 font-medium mt-1">
+                    Google Gemini (Free tier) or OpenAI. Fastest and most thorough evaluation.
+                  </p>
+                </div>
+              </button>
 
-            {/* "Your data will be safe here" - Green Privacy Box */}
-            <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 text-emerald-200 shadow-sm">
-              <div className="flex items-center space-x-2.5 text-emerald-400 font-bold text-sm mb-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-                <span className="text-emerald-300 text-sm font-bold tracking-wide">
-                  Your data will be safe here
-                </span>
-              </div>
-              <p className="text-xs text-emerald-200/90 leading-relaxed">
-                Your API key and resume data remain strictly private and secure. Your key is stored exclusively on your device in your browser&apos;s{' '}
-                <code className="bg-emerald-900/40 px-1.5 py-0.5 rounded text-emerald-200 font-mono text-[11px] border border-emerald-600/30">
-                  localStorage
-                </code>
-                . It is never saved to any database, never written to server logs, and never shared with third parties. All requests are securely transmitted over end-to-end encrypted TLS connections.
-              </p>
+              {/* Option B: Local Ollama */}
+              <button
+                type="button"
+                onClick={() => handleKeyTypeChange('ollama')}
+                className={`p-4 rounded-2xl border-2 text-left transition-all flex items-start space-x-3 ${
+                  keyType === 'ollama'
+                    ? 'bg-[#DDF282] border-black shadow-[3px_3px_0px_0px_#000]'
+                    : 'bg-[#FAF6F0] border-black/40 hover:border-black text-slate-700'
+                }`}
+              >
+                <div className="w-9 h-9 rounded-xl bg-white border-2 border-black flex items-center justify-center shrink-0">
+                  <Terminal className="w-4 h-4 text-black" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-black text-sm text-black">Local Ollama API</span>
+                    <span className="px-1.5 py-0.2 bg-white border border-black rounded text-[9px] font-black uppercase">
+                      100% Offline
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-700 font-medium mt-1">
+                    Runs on your own machine. No external cloud calls or subscriptions required.
+                  </p>
+                </div>
+              </button>
             </div>
           </div>
 
-          {/* Advanced Vercel / Remote Backend Settings (Optional Collapsible) */}
-          <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5">
+          {/* Form Fields: Public API */}
+          {keyType === 'public' ? (
+            <div className="space-y-5">
+              {/* Sub-selector: Gemini vs OpenAI */}
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-slate-700 block mb-2">
+                  2. Select Provider:
+                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettings({ ...settings, provider: 'gemini', model: 'gemini-2.5-flash', isVerified: false });
+                      setVerificationResult(null);
+                    }}
+                    className={`px-4 py-2 rounded-xl border-2 font-bold text-xs transition-all flex items-center space-x-2 ${
+                      isGemini
+                        ? 'bg-black text-white border-black shadow-[2px_2px_0px_0px_#000]'
+                        : 'bg-white text-black border-black/60 hover:border-black'
+                    }`}
+                  >
+                    <span>Google Gemini (Free)</span>
+                    {isGemini && <Check className="w-3.5 h-3.5 text-[#FEF08A]" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettings({ ...settings, provider: 'openai', model: 'gpt-4o-mini', isVerified: false });
+                      setVerificationResult(null);
+                    }}
+                    className={`px-4 py-2 rounded-xl border-2 font-bold text-xs transition-all flex items-center space-x-2 ${
+                      isOpenAI
+                        ? 'bg-black text-white border-black shadow-[2px_2px_0px_0px_#000]'
+                        : 'bg-white text-black border-black/60 hover:border-black'
+                    }`}
+                  >
+                    <span>OpenAI (GPT-4o)</span>
+                    {isOpenAI && <Check className="w-3.5 h-3.5 text-[#FEF08A]" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* API Key Input */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-black uppercase tracking-wider text-slate-800">
+                    Enter {isGemini ? 'Google Gemini' : 'OpenAI'} API Key:
+                  </label>
+                  {isGemini && (
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center space-x-1 text-xs font-bold text-indigo-700 hover:underline"
+                    >
+                      <span>Get Free Gemini Key</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+
+                <div className="relative flex items-center">
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    value={settings.apiKey}
+                    onChange={(e) => {
+                      setSettings({ ...settings, apiKey: e.target.value, isVerified: false });
+                      setVerificationResult(null);
+                    }}
+                    placeholder={isGemini ? 'AIzaSy...' : 'sk-proj-...'}
+                    className="w-full pl-4 pr-24 py-3 bg-[#FAF6F0] border-2 border-black rounded-xl text-sm font-mono text-black placeholder-slate-400 focus:outline-none focus:bg-white shadow-[2px_2px_0px_0px_#000]"
+                  />
+                  <div className="absolute right-2 flex items-center space-x-1">
+                    <button
+                      type="button"
+                      onClick={handlePasteKey}
+                      title="Paste from clipboard"
+                      className="p-1.5 text-slate-700 hover:text-black rounded-lg hover:bg-black/5"
+                    >
+                      <ClipboardPaste className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowKey(!showKey)}
+                      title={showKey ? 'Hide key' : 'Show key'}
+                      className="p-1.5 text-slate-700 hover:text-black rounded-lg hover:bg-black/5"
+                    >
+                      {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Form Fields: Local Ollama */
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-black uppercase tracking-wider text-slate-800 block mb-1.5">
+                  Ollama Base Endpoint:
+                </label>
+                <input
+                  type="text"
+                  value={settings.baseUrl || 'http://127.0.0.1:11434'}
+                  onChange={(e) => setSettings({ ...settings, baseUrl: e.target.value, isVerified: false })}
+                  placeholder="http://127.0.0.1:11434"
+                  className="w-full px-4 py-2.5 bg-[#FAF6F0] border-2 border-black rounded-xl text-sm font-mono text-black shadow-[2px_2px_0px_0px_#000]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-black uppercase tracking-wider text-slate-800 block mb-1.5">
+                  Local Model Name:
+                </label>
+                <input
+                  type="text"
+                  value={settings.model || 'gemma4:latest'}
+                  onChange={(e) => setSettings({ ...settings, model: e.target.value, isVerified: false })}
+                  placeholder="gemma4:latest or llama3.2"
+                  className="w-full px-4 py-2.5 bg-[#FAF6F0] border-2 border-black rounded-xl text-sm font-mono text-black shadow-[2px_2px_0px_0px_#000]"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Test Connection Button */}
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleVerifyKey}
+              disabled={isVerifying}
+              className="inline-flex items-center space-x-2 px-5 py-2.5 bg-black hover:bg-slate-800 text-white rounded-xl border-2 border-black text-xs font-black shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50"
+            >
+              <Zap className={`w-3.5 h-3.5 ${isVerifying ? 'animate-spin text-[#FEF08A]' : 'text-[#FEF08A]'}`} />
+              <span>{isVerifying ? 'Testing Connection...' : 'Test Connection / Verify Key'}</span>
+            </button>
+            <span className="text-xs text-slate-600 font-medium">
+              Performs a quick 1-token handshake with {settings.provider === 'ollama' ? 'Local Ollama' : settings.provider}.
+            </span>
+          </div>
+
+          {/* Verification Feedback Banner */}
+          {verificationResult && (
+            <div
+              className={`mt-4 p-4 rounded-xl border-2 text-xs font-medium flex items-start space-x-3 ${
+                verificationResult.valid
+                  ? 'bg-[#DDF282] border-black text-lime-950 shadow-[2px_2px_0px_0px_#000]'
+                  : 'bg-[#FFCCD5] border-black text-rose-950 shadow-[2px_2px_0px_0px_#000]'
+              }`}
+            >
+              {verificationResult.valid ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-800 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-800 shrink-0 mt-0.5" />
+              )}
+              <div>
+                <p className="font-black text-sm">{verificationResult.message}</p>
+                {verificationResult.latency_ms !== undefined && (
+                  <p className="text-[11px] font-mono mt-0.5">
+                    Latency: {verificationResult.latency_ms}ms • Model: {verificationResult.model || settings.model}
+                  </p>
+                )}
+                {verificationResult.error && (
+                  <p className="text-[11px] font-mono mt-1 text-rose-900">
+                    Details: {verificationResult.error}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* "YOUR DATA WILL BE SAFE HERE" - GREEN BOX (USER ASK)     */}
+          {/* ======================================================== */}
+          <div className="mt-8 p-5 sm:p-6 rounded-2xl bg-[#DDF282]/50 border-2 border-emerald-700 shadow-[4px_4px_0px_0px_#059669]">
+            <div className="flex items-center space-x-2 text-emerald-900 font-black text-base mb-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-800 shrink-0" />
+              <span>Your data will be safe here</span>
+            </div>
+            <p className="text-xs sm:text-sm text-emerald-950 leading-relaxed font-medium">
+              Your API key and resume data remain strictly private and secure. Your key is stored exclusively on your device in your browser&apos;s{' '}
+              <code className="bg-emerald-900/15 px-1.5 py-0.5 rounded border border-emerald-700/40 text-emerald-950 font-bold font-mono text-xs">
+                localStorage
+              </code>
+              . It is never saved to our database, never written to server logs, and never shared with third parties. All requests are securely transmitted over end-to-end encrypted TLS connections.
+            </p>
+          </div>
+
+          {/* Advanced Custom Backend Toggle */}
+          <div className="mt-6 pt-4 border-t border-black/20">
             <button
               type="button"
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="flex items-center justify-between w-full text-left text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
+              className="text-xs font-bold text-slate-600 hover:text-black underline flex items-center space-x-1"
             >
-              <div className="flex items-center space-x-2">
-                <Server className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Advanced: Backend API Endpoint (For Vercel Deployments)</span>
-              </div>
-              <span className="text-[11px] underline">
-                {showAdvanced ? 'Hide Options' : 'Configure Custom Backend'}
-              </span>
+              <Server className="w-3.5 h-3.5" />
+              <span>{showAdvanced ? 'Hide Advanced Backend Settings' : 'Advanced: Configure Custom Backend URL'}</span>
             </button>
 
             {showAdvanced && (
-              <div className="mt-4 pt-4 border-t border-slate-800/60 space-y-3 animate-fade-in text-xs">
-                <p className="text-slate-400">
-                  If this frontend is hosted on Vercel and your backend is running separately (e.g. Render, Railway, or localhost), specify the base URL here:
+              <div className="mt-3 p-4 rounded-xl bg-[#FAF6F0] border border-black/60 space-y-2 text-xs">
+                <p className="text-slate-700 font-medium">
+                  If this frontend is hosted on Vercel and your backend is deployed elsewhere (e.g. Render, Railway, or localhost), specify the base URL here:
                 </p>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     value={apiBaseUrl}
                     onChange={(e) => setApiBaseUrl(e.target.value)}
-                    placeholder="e.g. https://my-resume-backend.onrender.com/api (Leave blank for default /api)"
-                    className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono text-xs"
+                    placeholder="e.g. https://my-backend.onrender.com/api"
+                    className="flex-1 px-3 py-2 bg-white border border-black rounded-lg font-mono text-xs text-black"
                   />
                   <button
                     type="button"
                     onClick={handleTestBackend}
                     disabled={backendTestStatus.testing}
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium shrink-0"
+                    className="px-3.5 py-2 bg-black text-white rounded-lg font-bold text-xs"
                   >
                     {backendTestStatus.testing ? 'Testing...' : 'Test Backend'}
                   </button>
                 </div>
                 {backendTestStatus.message && (
-                  <p
-                    className={`text-[11px] font-mono ${
-                      backendTestStatus.success ? 'text-emerald-400' : 'text-rose-400'
-                    }`}
-                  >
+                  <p className={`font-mono text-[11px] ${backendTestStatus.success ? 'text-emerald-800' : 'text-rose-800'}`}>
                     {backendTestStatus.message}
                   </p>
                 )}
@@ -394,125 +490,42 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-800">
+          {/* Action Buttons: Save & Reset */}
+          <div className="mt-8 pt-6 border-t-2 border-black flex flex-col sm:flex-row items-center justify-between gap-3">
             <button
               type="button"
               onClick={handleResetToDefaults}
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 text-xs font-semibold transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl text-slate-700 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-black text-xs font-bold transition-all"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset Key</span>
+              <span>Reset to Defaults</span>
             </button>
 
             <div className="flex items-center space-x-3 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={handleSave}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all hover:scale-[1.02]"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-7 py-3 bg-[#DDF282] hover:bg-[#d5ed70] text-black font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all"
               >
                 <Check className="w-4 h-4" />
-                <span>{saveSuccess ? 'Saved & Activated!' : 'Save & Activate'}</span>
+                <span>{saveSuccess ? 'Saved & Activated!' : 'Save & Activate Key'}</span>
               </button>
 
-              {onNavigateToAudit && (
+              {onNavigateToProject && (
                 <button
                   type="button"
-                  onClick={onNavigateToAudit}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02]"
+                  onClick={onNavigateToProject}
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-6 py-3 bg-black hover:bg-slate-800 text-white font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all"
                 >
-                  <span>Start Audit</span>
+                  <span>Go to Application</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}
             </div>
           </div>
+
         </div>
 
-        {/* Sidebar Info & How-to Guide */}
-        <div className="space-y-6">
-          {/* Quick Guide: How to get a free Gemini Key */}
-          <div className="bg-gradient-to-b from-indigo-950/40 to-slate-900/60 border border-indigo-900/40 rounded-2xl p-6 shadow-sm">
-            <div className="flex items-center space-x-2 text-indigo-400 font-bold text-sm mb-3">
-              <Sparkles className="w-4 h-4" />
-              <span>Get a Free Google Gemini Key in 60s</span>
-            </div>
-            <ol className="space-y-3 text-xs text-slate-300">
-              <li className="flex items-start space-x-2.5">
-                <span className="w-5 h-5 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                  1
-                </span>
-                <span>
-                  Visit{' '}
-                  <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-400 underline font-semibold"
-                  >
-                    Google AI Studio
-                  </a>{' '}
-                  and sign in with your Google account.
-                </span>
-              </li>
-              <li className="flex items-start space-x-2.5">
-                <span className="w-5 h-5 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                  2
-                </span>
-                <span>Click <strong>&quot;Create API Key&quot;</strong> in a new or existing project.</span>
-              </li>
-              <li className="flex items-start space-x-2.5">
-                <span className="w-5 h-5 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                  3
-                </span>
-                <span>Copy the key starting with <code>AIzaSy...</code> and paste it here.</span>
-              </li>
-              <li className="flex items-start space-x-2.5">
-                <span className="w-5 h-5 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                  4
-                </span>
-                <span>Click <strong>&quot;Test Connection&quot;</strong> and start auditing!</span>
-              </li>
-            </ol>
-
-            <div className="mt-4 pt-3 border-t border-indigo-900/40">
-              <a
-                href="https://aistudio.google.com/app/apikey"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center space-x-2 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition-colors"
-              >
-                <span>Open Google AI Studio</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </div>
-
-          {/* Model Capability Note */}
-          <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 shadow-sm">
-            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2">
-              Why use your own Gemini Key?
-            </h4>
-            <ul className="space-y-2 text-xs text-slate-400">
-              <li className="flex items-center space-x-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                <span>Live evaluation by all 7 adversarial hiring agents</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                <span>High context window for full-length resumes and JDs</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                <span>Automated anti-hallucination provenance rewrite</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                <span>Completely free tier available from Google AI Studio</span>
-              </li>
-            </ul>
-          </div>
-        </div>
       </div>
     </div>
   );

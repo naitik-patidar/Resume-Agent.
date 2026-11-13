@@ -1,117 +1,120 @@
 import React from 'react';
 import {
   ShieldAlert,
-  RotateCcw,
+  Flame,
   Key,
-  FileText,
-  Sparkles,
+  FolderGit2,
+  Home,
 } from 'lucide-react';
 import { UserSettings } from '../types';
+
+export type NavigationTab = 'home' | 'project' | 'api-key';
 
 interface HeaderProps {
   onReset?: () => void;
   hasActiveSession?: boolean;
-  activeTab?: 'audit' | 'settings';
-  onTabChange?: (tab: 'audit' | 'settings') => void;
+  activeTab?: NavigationTab;
+  onTabChange?: (tab: NavigationTab) => void;
   userSettings?: UserSettings | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  onReset,
-  hasActiveSession,
-  activeTab = 'audit',
+  activeTab = 'home',
   onTabChange,
   userSettings,
 }) => {
   const hasKey = Boolean(userSettings?.apiKey && userSettings.apiKey.trim());
+  const isOllama = userSettings?.provider === 'ollama';
 
   return (
-    <header className="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
-        {/* Left: Brand & Title */}
-        <div className="flex items-center space-x-3.5 cursor-pointer" onClick={() => onTabChange?.('audit')}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 ring-1 ring-white/10 shrink-0">
-            <ShieldAlert className="w-5 h-5 text-white" />
+    <header className="sticky top-0 z-50 bg-[#FAF6F0]/90 backdrop-blur-md pt-3.5 pb-2.5 px-4 sm:px-6 border-b border-black/10">
+      <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+        
+        {/* Left: Brand Icon Box (Image 1 Style) */}
+        <div
+          onClick={() => onTabChange?.('home')}
+          className="flex items-center space-x-2.5 cursor-pointer group select-none"
+        >
+          <div className="w-11 h-11 bg-[#FEF08A] rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000] flex items-center justify-center group-hover:rotate-6 group-hover:scale-105 transition-all">
+            <ShieldAlert className="w-5 h-5 text-black" />
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
-                ADVERSARIAL RESUME AUDIT
-              </h1>
-              <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                7 Agents
+          <div className="hidden sm:block">
+            <div className="flex items-center space-x-1.5">
+              <span className="text-xs font-black tracking-tight text-black uppercase">
+                ADVERSARIAL RESUME
+              </span>
+              <span className="px-1.5 py-0.2 bg-[#FFCCD5] border border-black rounded text-[9px] font-black uppercase">
+                7 AGENTS
               </span>
             </div>
-            <p className="text-xs text-slate-400 hidden sm:block">
-              Hostile hiring simulation with strict anti-hallucination provenance
+            <p className="text-[10px] text-slate-600 font-semibold leading-none mt-0.5">
+              Hostile hiring simulation
             </p>
           </div>
         </div>
 
-        {/* Center: Navigation Tabs */}
+        {/* Center: Neo-Brutalist Pill Navbar (Image 1 Style) */}
         {onTabChange && (
-          <nav className="flex items-center bg-slate-950/60 p-1 rounded-xl border border-slate-800">
+          <nav className="bg-white border-2 border-black rounded-2xl shadow-[3px_3px_0px_0px_#000] p-1.5 flex items-center space-x-1 sm:space-x-1.5">
+            {/* Tab 1: Home */}
             <button
-              onClick={() => onTabChange('audit')}
-              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTab === 'audit'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
+              onClick={() => onTabChange('home')}
+              className={`flex items-center space-x-1.5 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-black transition-all ${
+                activeTab === 'home'
+                  ? 'bg-[#C9B7F5] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]'
+                  : 'text-slate-700 hover:text-black hover:bg-slate-100'
               }`}
             >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Resume Audit</span>
+              <Home className="w-3.5 h-3.5" />
+              <span>home</span>
             </button>
 
+            {/* Tab 2: Projects (The Agent Application) */}
             <button
-              onClick={() => onTabChange('settings')}
-              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTab === 'settings'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
+              onClick={() => onTabChange('project')}
+              className={`flex items-center space-x-1.5 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-black transition-all ${
+                activeTab === 'project'
+                  ? 'bg-[#C9B7F5] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]'
+                  : 'text-slate-700 hover:text-black hover:bg-slate-100'
+              }`}
+            >
+              <FolderGit2 className="w-3.5 h-3.5" />
+              <span>projects</span>
+              <span className="hidden md:inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            </button>
+
+            {/* Tab 3: Submit API Key */}
+            <button
+              onClick={() => onTabChange('api-key')}
+              className={`flex items-center space-x-1.5 px-3 sm:px-4 py-1.5 rounded-xl text-xs font-black transition-all ${
+                activeTab === 'api-key'
+                  ? 'bg-[#C9B7F5] text-black border-2 border-black shadow-[1px_1px_0px_0px_#000]'
+                  : 'text-slate-700 hover:text-black hover:bg-slate-100'
               }`}
             >
               <Key className="w-3.5 h-3.5" />
-              <span>API Key</span>
-              {hasKey && (
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
+              <span className="whitespace-nowrap">submit api key</span>
+              {(hasKey || isOllama) && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 border border-black ml-0.5" />
               )}
             </button>
           </nav>
         )}
 
-        {/* Right: Active Model Badge & Session Controls */}
-        <div className="flex items-center space-x-2.5">
-          {/* Active Model Indicator Badge */}
+        {/* Right: Action Button (Image 1 Style: "join us." / "audit now.") */}
+        <div className="flex items-center space-x-2">
           {onTabChange && (
             <button
-              onClick={() => onTabChange('settings')}
-              title="Click to configure your Gemini API key"
-              className={`flex items-center space-x-1.5 px-3 py-1 rounded-full border text-xs font-medium transition-all ${
-                hasKey
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
-                  : 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
-              }`}
+              onClick={() => onTabChange('project')}
+              className="px-4 sm:px-5 py-2 bg-black hover:bg-slate-800 text-white rounded-2xl border-2 border-black text-xs font-black tracking-wide shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center space-x-1.5 select-none"
             >
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span className="font-semibold">
-                {hasKey ? 'Gemini Key Connected' : 'Add Gemini Key'}
-              </span>
-              <span className={`w-1.5 h-1.5 rounded-full ${hasKey ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-            </button>
-          )}
-
-          {hasActiveSession && onReset && (
-            <button
-              onClick={onReset}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-xs font-medium transition-all shadow-sm"
-              title="Start over with a new candidate resume"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>New Audit</span>
+              <Flame className="w-3.5 h-3.5 text-[#FEF08A] fill-[#FEF08A]" />
+              <span className="hidden sm:inline">audit now.</span>
+              <span className="sm:hidden">audit.</span>
             </button>
           )}
         </div>
+
       </div>
     </header>
   );
