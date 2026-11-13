@@ -25,9 +25,10 @@ import { UserSettings, VerifyKeyResponse } from '../types';
 
 interface ApiKeySettingsPageProps {
   onNavigateToProject?: () => void;
+  onOpenLegal?: (tab?: 'terms' | 'privacy' | 'permissions' | 'cookies' | 'ai-ethics') => void;
 }
 
-export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNavigateToProject }) => {
+export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNavigateToProject, onOpenLegal }) => {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [keyType, setKeyType] = useState<'public' | 'ollama'>('public');
   const [showKey, setShowKey] = useState<boolean>(false);
@@ -411,6 +412,39 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
               </code>
               . It is never saved to our database, never written to server logs, and never shared with third parties. All requests are securely transmitted over end-to-end encrypted TLS connections.
             </p>
+          </div>
+
+          {/* BYOK Privacy & Storage Disclosure */}
+          <div className="mt-6 p-4 bg-[#FAF6F0] border-2 border-black rounded-2xl text-xs space-y-1.5 shadow-[2px_2px_0px_0px_#000]">
+            <div className="flex items-center justify-between">
+              <span className="font-black text-black uppercase tracking-wider flex items-center space-x-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                <span>Zero Server-Side Key Retention</span>
+              </span>
+              <span className="px-2 py-0.5 bg-[#DDF282] border border-black rounded text-[10px] font-black uppercase">
+                Client-Side Only
+              </span>
+            </div>
+            <p className="text-slate-700 font-medium">
+              Your API key is stored exclusively in your personal browser&apos;s <code>localStorage</code>. It is never logged or written to our backend database. You maintain complete sovereignty and can clear it at any time.
+            </p>
+            <div className="flex items-center space-x-3 pt-1 font-bold">
+              <button
+                type="button"
+                onClick={() => onOpenLegal?.('privacy')}
+                className="text-black underline hover:text-purple-700 text-[11px]"
+              >
+                Read Privacy Policy
+              </button>
+              <span className="text-slate-400">•</span>
+              <button
+                type="button"
+                onClick={() => onOpenLegal?.('cookies')}
+                className="text-black underline hover:text-purple-700 text-[11px]"
+              >
+                Cookie & Storage Policy
+              </button>
+            </div>
           </div>
 
           {/* Action Buttons: Save & Reset */}

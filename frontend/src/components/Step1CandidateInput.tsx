@@ -1,13 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, FileText, Clipboard, CheckCircle2, AlertCircle, Loader2, Sparkles, ArrowRight } from 'lucide-react';
+import { UploadCloud, FileText, Clipboard, CheckCircle2, AlertCircle, Loader2, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
 import { uploadResumeFile, submitPastedExperience } from '../services/api';
 import { CandidateData } from '../types';
 
 interface Step1CandidateInputProps {
   onCandidateSubmitted: (data: CandidateData) => void;
+  onOpenLegal?: (tab?: 'terms' | 'privacy' | 'permissions' | 'cookies' | 'ai-ethics') => void;
 }
 
-export const Step1CandidateInput: React.FC<Step1CandidateInputProps> = ({ onCandidateSubmitted }) => {
+export const Step1CandidateInput: React.FC<Step1CandidateInputProps> = ({ onCandidateSubmitted, onOpenLegal }) => {
   const [activeTab, setActiveTab] = useState<'upload' | 'paste'>('upload');
   const [candidateName, setCandidateName] = useState('');
   const [pastedText, setPastedText] = useState('');
@@ -258,6 +259,60 @@ Python, FastAPI, Docker, PostgreSQL, Redis, AWS"
           </div>
         </div>
       )}
+
+      {/* User Permission & Candidate Data Privacy Consent Box */}
+      <div className="bg-[#FAF6F0] border-2 border-black rounded-2xl p-4 sm:p-5 shadow-[4px_4px_0px_0px_#000] space-y-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/20 pb-2">
+          <div className="flex items-center space-x-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-700" />
+            <span className="text-xs font-black uppercase tracking-wider text-black">
+              Candidate Data Permission & Privacy Consent
+            </span>
+          </div>
+          <span className="px-2 py-0.5 bg-[#DDF282] border border-black rounded text-[10px] font-black uppercase text-lime-950 w-fit">
+            GDPR & CCPA Compliant
+          </span>
+        </div>
+
+        <p className="text-xs text-slate-700 font-medium leading-relaxed">
+          By uploading or submitting your resume text, you grant affirmative permission to parse and evaluate your career history exclusively for this audit session. 
+          <strong> We never sell your personal information or train public AI foundation models on your resume.</strong> All processing is ephemeral and controlled by you.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-xs font-bold text-slate-800">
+          <button
+            type="button"
+            onClick={() => onOpenLegal?.('terms')}
+            className="hover:text-black underline underline-offset-2 hover:decoration-2"
+          >
+            Terms of Service
+          </button>
+          <span className="text-slate-400">•</span>
+          <button
+            type="button"
+            onClick={() => onOpenLegal?.('privacy')}
+            className="hover:text-black underline underline-offset-2 hover:decoration-2"
+          >
+            Privacy Policy
+          </button>
+          <span className="text-slate-400">•</span>
+          <button
+            type="button"
+            onClick={() => onOpenLegal?.('permissions')}
+            className="hover:text-black underline underline-offset-2 hover:decoration-2"
+          >
+            User Permissions
+          </button>
+          <span className="text-slate-400">•</span>
+          <button
+            type="button"
+            onClick={() => onOpenLegal?.('ai-ethics')}
+            className="hover:text-black underline underline-offset-2 hover:decoration-2"
+          >
+            AI Fair Hiring Notice
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -23,6 +23,7 @@ export interface ResumeAuditWidgetProps {
   onAuditFinished?: (report: AuditReport) => void;
   hideHeader?: boolean;
   onOpenSettings?: () => void;
+  onOpenLegal?: (tab?: 'terms' | 'privacy' | 'permissions' | 'cookies' | 'ai-ethics') => void;
 }
 
 export const ResumeAuditWidget: React.FC<ResumeAuditWidgetProps> = ({
@@ -30,6 +31,7 @@ export const ResumeAuditWidget: React.FC<ResumeAuditWidgetProps> = ({
   onAuditFinished,
   hideHeader = false,
   onOpenSettings,
+  onOpenLegal,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [candidateData, setCandidateData] = useState<CandidateData | null>(null);
@@ -161,7 +163,10 @@ export const ResumeAuditWidget: React.FC<ResumeAuditWidgetProps> = ({
 
         <ErrorBoundary onReset={handleReset}>
           {currentStep === 1 && (
-            <Step1CandidateInput onCandidateSubmitted={handleCandidateSubmitted} />
+            <Step1CandidateInput
+              onCandidateSubmitted={handleCandidateSubmitted}
+              onOpenLegal={onOpenLegal}
+            />
           )}
 
           {currentStep === 2 && candidateData && (
