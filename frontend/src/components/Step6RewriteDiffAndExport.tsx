@@ -9,7 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
-  Lock,
+  Loader2,
 } from 'lucide-react';
 import { downloadResumeFile, deleteSessionData } from '../services/api';
 import { CandidateData, RewriteResponse, VerificationResult } from '../types';
@@ -65,213 +65,203 @@ export const Step6RewriteDiffAndExport: React.FC<Step6RewriteDiffAndExportProps>
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Intro Header */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-[#FEF08A] border-2 border-black text-black text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000]">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>Step 6 of 6 • Truthful Rewrite & Gated Export</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-          Improved Resume & Factual Release Gate
-        </h2>
-        <p className="text-sm text-slate-400 max-w-xl mx-auto">
+
+        <div>
+          <div className="inline-block bg-[#C9B7F5] border-2 border-black rounded-xl px-5 py-2 shadow-[3px_3px_0px_0px_#000]">
+            <h2 className="text-2xl sm:text-3xl font-black text-black tracking-tight">
+              Improved Resume & Factual Release Gate
+            </h2>
+          </div>
+        </div>
+
+        <p className="text-xs sm:text-sm text-slate-700 font-medium max-w-xl mx-auto">
           All legitimate rejection objections have been corrected while strictly preserving candidate truthfulness. Unverified claims are prevented from passing the release gate.
         </p>
       </div>
 
-      {/* Factual Integrity Release Gate Status Banner */}
+      {/* Release Gate Status Banner */}
       <div
-        className={`rounded-2xl p-5 border shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-          passedGate
-            ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
-            : 'bg-rose-950/30 border-rose-500/40 text-rose-200'
+        className={`border-2 border-black rounded-3xl p-6 shadow-[5px_5px_0px_0px_#000] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+          passedGate ? 'bg-[#DDF282]' : 'bg-[#FFCCD5]'
         }`}
       >
-        <div className="flex items-start space-x-3.5">
-          <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
-              passedGate
-                ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30'
-                : 'bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30'
-            }`}
-          >
-            {passedGate ? <ShieldCheck className="w-6 h-6" /> : <ShieldAlert className="w-6 h-6" />}
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000] flex items-center justify-center shrink-0">
+            {passedGate ? (
+              <ShieldCheck className="w-6 h-6 text-emerald-800" />
+            ) : (
+              <ShieldAlert className="w-6 h-6 text-rose-800" />
+            )}
           </div>
-          <div className="space-y-1">
+          <div>
             <div className="flex items-center space-x-2">
-              <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                {passedGate
-                  ? 'Factual Integrity Release Gate: PASSED'
-                  : 'Factual Integrity Release Gate: BLOCKED'}
-              </h3>
-              <span
-                className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${
-                  passedGate
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                }`}
-              >
-                {passedGate ? 'Export Unlocked' : 'Requires Review'}
+              <span className="font-black text-base text-black">
+                {passedGate ? 'RELEASE GATE: PASSED (ZERO HALLUCINATIONS)' : 'RELEASE GATE: ATTENTION REQUIRED'}
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-black text-white text-[10px] font-black uppercase">
+                v{rewrite.version}
               </span>
             </div>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-slate-800 font-medium mt-0.5">
               {passedGate
-                ? 'Deterministic verification confirmed all metrics, companies, titles, and dates match original candidate evidence.'
-                : verification?.notes || 'Unverified claims detected in rewrite. Downloads remain blocked until resolved.'}
+                ? 'All factual claims and revised metrics have been mathematically verified against your original ground truth resume.'
+                : 'Some suggested statements could not be verified against the source text. Review the claim ledger below.'}
             </p>
           </div>
         </div>
 
-        {/* Download Buttons in Banner */}
+        {/* Download Buttons Group */}
         <div className="flex items-center space-x-2.5 w-full sm:w-auto">
-          <button
-            onClick={() => handleDownload('docx')}
-            disabled={!passedGate || downloadingFormat !== null}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>{downloadingFormat === 'docx' ? 'Generating...' : 'Download DOCX'}</span>
-          </button>
-
           <button
             onClick={() => handleDownload('pdf')}
             disabled={!passedGate || downloadingFormat !== null}
-            className="flex-1 sm:flex-none flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold border border-slate-700/80 transition-all shadow-md"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-2xl bg-black hover:bg-slate-800 disabled:opacity-50 text-white font-black text-xs border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>{downloadingFormat === 'pdf' ? 'Generating...' : 'Download PDF'}</span>
+            {downloadingFormat === 'pdf' ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FEF08A]" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            <span>Export ATS PDF</span>
+          </button>
+
+          <button
+            onClick={() => handleDownload('docx')}
+            disabled={!passedGate || downloadingFormat !== null}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-2xl bg-[#FEF08A] hover:bg-yellow-200 disabled:opacity-50 text-black font-black text-xs border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+          >
+            {downloadingFormat === 'docx' ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-black" />
+            ) : (
+              <FileCheck className="w-3.5 h-3.5" />
+            )}
+            <span>Export DOCX</span>
           </button>
         </div>
       </div>
 
-      {/* Tabs: Resume Preview vs Provenance Audit Ledger */}
-      <div className="flex rounded-xl bg-slate-900/80 p-1 border border-slate-800">
+      {/* View Mode Toggle: Preview vs Provenance */}
+      <div className="bg-white border-2 border-black rounded-2xl p-1.5 shadow-[4px_4px_0px_0px_#000] flex gap-2">
         <button
           onClick={() => setActiveTab('preview')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
             activeTab === 'preview'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-[#C9B7F5] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+              : 'bg-transparent text-slate-700 hover:text-black hover:bg-slate-100'
           }`}
         >
-          <FileText className="w-3.5 h-3.5" />
-          <span>Before & After Comparison</span>
+          <FileText className="w-4 h-4 text-black" />
+          <span>Full Markdown Resume Preview</span>
         </button>
+
         <button
           onClick={() => setActiveTab('provenance')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
             activeTab === 'provenance'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-[#C9B7F5] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+              : 'bg-transparent text-slate-700 hover:text-black hover:bg-slate-100'
           }`}
         >
-          <FileCheck className="w-3.5 h-3.5" />
-          <span>Factual Provenance Ledger ({rewrite.change_set.length} Revisions)</span>
+          <Sparkles className="w-4 h-4 text-black" />
+          <span>Line-by-Line Changes ({rewrite.change_set?.length || 0})</span>
         </button>
       </div>
 
-      {/* View 1: Before & After Split Diff */}
+      {/* Tab 1: Full Markdown Document Preview */}
       {activeTab === 'preview' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Column: Original Source */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Original Candidate Input (Truth Baseline)
-              </span>
-              <span className="text-[11px] text-slate-500 font-mono">
-                {candidate.wordCount} words
-              </span>
-            </div>
-            <div className="max-h-[550px] overflow-y-auto bg-slate-950/80 rounded-xl p-4 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap leading-relaxed">
-              {candidate?.extractedText || ''}
-            </div>
+        <div className="bg-white border-2 border-black rounded-3xl p-6 sm:p-8 shadow-[5px_5px_0px_0px_#000] space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b-2 border-black">
+            <span className="text-xs font-black uppercase tracking-wider text-black">
+              Standardized ATS Markdown Format
+            </span>
+            <span className="text-xs text-slate-600 font-bold">
+              Ready for immediate export or copy
+            </span>
           </div>
 
-          {/* Right Column: Improved Resume */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center space-x-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Truthful Improved Resume (ATS Ready)</span>
-              </span>
-              <span className="text-[11px] text-emerald-400/80 font-mono">
-                Verified v{rewrite?.version || 1}
-              </span>
-            </div>
-            <div className="max-h-[550px] overflow-y-auto bg-slate-950/80 rounded-xl p-4 border border-slate-800/80 text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed">
-              {rewrite?.improved_markdown || ''}
-            </div>
+          <div className="bg-[#FAF6F0] rounded-2xl p-6 border-2 border-black font-mono text-xs text-black leading-relaxed whitespace-pre-wrap max-h-[500px] overflow-y-auto shadow-inner">
+            {rewrite.improved_markdown}
           </div>
         </div>
       )}
 
-      {/* View 2: Provenance Audit Ledger */}
+      {/* Tab 2: Line-by-Line Provenance Diff */}
       {activeTab === 'provenance' && (
-        <div className="space-y-3">
-          <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
-            Every revised sentence or bullet point is strictly mapped to verbatim original evidence.
-            Zero metrics or company credentials were fabricated.
-          </div>
-
-          {(Array.isArray(rewrite?.change_set) ? rewrite.change_set : []).map((item, idx) => {
+        <div className="space-y-4">
+          {(rewrite.change_set || []).map((change, idx) => {
             const isExpanded = expandedChangeIndex === idx;
 
             return (
               <div
                 key={idx}
-                className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 space-y-3 hover:border-slate-700/80 transition-all"
+                className="bg-white border-2 border-black rounded-2xl p-5 shadow-[4px_4px_0px_0px_#000] space-y-3"
               >
                 <div
                   onClick={() => setExpandedChangeIndex(isExpanded ? null : idx)}
-                  className="flex items-start justify-between cursor-pointer gap-3"
+                  className="flex items-center justify-between cursor-pointer select-none"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold flex items-center justify-center">
-                        {idx + 1}
-                      </span>
-                      <h4 className="text-xs sm:text-sm font-bold text-white">
-                        {item.reason}
-                      </h4>
-                    </div>
-                    <p className="text-xs text-emerald-300 font-mono line-clamp-1">
-                      + {item.revised_text}
-                    </p>
+                  <div className="flex items-center space-x-2.5">
+                    <span className="w-6 h-6 rounded-lg bg-[#FEF08A] border border-black font-mono text-xs font-black flex items-center justify-center">
+                      {idx + 1}
+                    </span>
+                    <span className="text-xs sm:text-sm font-black text-black">
+                      {change.reason}
+                    </span>
+                  </div>
+                  {isExpanded ? (
+                    <ChevronUp className="w-4 h-4 text-black" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-black" />
+                  )}
+                </div>
+
+                {/* Diff Comparison */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
+                  <div className="p-3 rounded-xl bg-[#FFCCD5]/50 border-2 border-black">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-rose-950 block mb-1">
+                      Original Text:
+                    </span>
+                    <p className="font-mono text-slate-900 leading-relaxed">{change.original_text}</p>
                   </div>
 
-                  <button className="text-slate-400 hover:text-white p-1">
-                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </button>
+                  <div className="p-3 rounded-xl bg-[#DDF282]/50 border-2 border-black">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-emerald-950 block mb-1">
+                      Truthful Revision:
+                    </span>
+                    <p className="font-mono text-black font-bold leading-relaxed">{change.revised_text}</p>
+                  </div>
                 </div>
 
                 {isExpanded && (
-                  <div className="pt-2 border-t border-slate-800 space-y-2 text-xs">
-                    <div className="space-y-1">
-                      <span className="text-slate-500 uppercase tracking-wider font-semibold text-[10px]">
-                        Original Candidate Text:
+                  <div className="pt-2 border-t border-black/10 text-xs space-y-2">
+                    <div>
+                      <span className="text-[10px] uppercase font-black tracking-wider text-slate-600 block">
+                        Source Evidence:
                       </span>
-                      <p className="p-2.5 rounded-lg bg-slate-950 text-slate-400 font-mono">
-                        "{item.original_text}"
+                      <p className="font-mono text-slate-800 bg-[#FAF6F0] p-2 rounded-lg border border-black/30 mt-0.5">
+                        {change.source_evidence}
                       </p>
                     </div>
 
-                    <div className="space-y-1">
-                      <span className="text-emerald-400 uppercase tracking-wider font-semibold text-[10px]">
-                        Improved Truthful Text:
-                      </span>
-                      <p className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-emerald-200 font-mono">
-                        "{item.revised_text}"
-                      </p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <span className="text-indigo-400 uppercase tracking-wider font-semibold text-[10px]">
-                        Verbatim Source Evidence:
-                      </span>
-                      <p className="p-2.5 rounded-lg bg-indigo-950/30 border border-indigo-500/20 text-indigo-200 font-mono">
-                        "{item.source_evidence}"
-                      </p>
-                    </div>
+                    {change.factual_claims_added_or_changed?.length > 0 && (
+                      <div>
+                        <span className="text-[10px] uppercase font-black tracking-wider text-slate-600 block">
+                          Claims Modified:
+                        </span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {change.factual_claims_added_or_changed.map((claim, cIdx) => (
+                            <span key={cIdx} className="px-2 py-0.5 rounded bg-white border border-black text-[10px] font-bold text-black">
+                              {claim}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -280,20 +270,22 @@ export const Step6RewriteDiffAndExport: React.FC<Step6RewriteDiffAndExportProps>
         </div>
       )}
 
-      {/* Bottom Actions: Clear/Delete Session */}
-      <div className="pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-xs text-slate-500 flex items-center space-x-2">
-          <Lock className="w-3.5 h-3.5 text-slate-400" />
-          <span>Privacy Guarantee: Data resides locally in SQLite and can be purged immediately.</span>
+      {/* Session Management & GDPR Wipe */}
+      <div className="bg-white border-2 border-black rounded-3xl p-6 shadow-[4px_4px_0px_0px_#000] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h4 className="text-sm font-black text-black">Audit Complete & Saved</h4>
+          <p className="text-xs text-slate-600 font-medium mt-0.5">
+            Your improved resume is ready. You can permanently wipe this session and all uploaded files anytime.
+          </p>
         </div>
 
         <button
           onClick={handleDeleteSession}
           disabled={isDeleting}
-          className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold transition-all"
+          className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-[#FFCCD5] hover:bg-rose-200 border-2 border-black text-rose-950 text-xs font-black shadow-[2px_2px_0px_0px_#000] transition-all"
         >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>{isDeleting ? 'Purging records...' : 'Purge All Session Data'}</span>
+          <Trash2 className="w-3.5 h-3.5 text-rose-900" />
+          <span>{isDeleting ? 'Wiping Session...' : 'Delete Session Data'}</span>
         </button>
       </div>
     </div>

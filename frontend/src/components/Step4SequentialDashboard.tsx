@@ -18,42 +18,42 @@ interface Step4SequentialDashboardProps {
 
 const AGENT_METADATA: Record<
   string,
-  { order: number; roleDescription: string; iconColor: string }
+  { order: number; roleDescription: string; bgColor: string }
 > = {
   'ATS Rejection Agent': {
     order: 1,
     roleDescription: 'Parses resume layout, text columns, tables, headers, and keyword compliance.',
-    iconColor: 'from-blue-500 to-indigo-600',
+    bgColor: 'bg-[#FFE2C8]',
   },
   'Recruiter Rejection Agent': {
     order: 2,
     roleDescription: 'Simulates the critical 6-second recruiter glance for career trajectory and immediate impact.',
-    iconColor: 'from-purple-500 to-indigo-600',
+    bgColor: 'bg-[#C9B7F5]',
   },
   'Technical Rejection Agent': {
     order: 3,
     roleDescription: 'Validates engineering rigor, architectural depth, stack realism, and technical claims.',
-    iconColor: 'from-cyan-500 to-blue-600',
+    bgColor: 'bg-[#FFCCD5]',
   },
   'Experience Rejection Agent': {
     order: 4,
     roleDescription: 'Scrutinizes bullet strength, replacing passive duty lists with Action + Context + Results.',
-    iconColor: 'from-emerald-500 to-teal-600',
+    bgColor: 'bg-[#DDF282]',
   },
   'Formatting Rejection Agent': {
     order: 5,
     roleDescription: 'Checks typographic hierarchy, date consistency, bullet punctuation, and visual symmetry.',
-    iconColor: 'from-amber-500 to-orange-600',
+    bgColor: 'bg-[#BAE6FD]',
   },
   'Credibility Rejection Agent': {
     order: 6,
     roleDescription: 'Examines employment date chronology, ownership inflation, and suspicious metrics.',
-    iconColor: 'from-rose-500 to-pink-600',
+    bgColor: 'bg-[#FEF08A]',
   },
   'Job Match Rejection Agent': {
     order: 7,
     roleDescription: 'Assesses rigorous alignment with mandatory vs preferred employer job requirements.',
-    iconColor: 'from-indigo-500 to-purple-600',
+    bgColor: 'bg-[#A7F3D0]',
   },
 };
 
@@ -94,42 +94,42 @@ export const Step4SequentialDashboard: React.FC<Step4SequentialDashboardProps> =
     switch (status) {
       case 'queued':
         return (
-          <span className="flex items-center space-x-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700/60 text-xs font-medium">
-            <Clock className="w-3 h-3" />
+          <span className="flex items-center space-x-1 px-3 py-1 rounded-xl bg-white text-slate-700 border-2 border-black/40 text-xs font-bold">
+            <Clock className="w-3.5 h-3.5" />
             <span>Queued</span>
           </span>
         );
       case 'running':
         return (
-          <span className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-xs font-semibold animate-pulse">
-            <Loader2 className="w-3 h-3 animate-spin text-indigo-400" />
+          <span className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-[#FEF08A] text-black border-2 border-black text-xs font-black shadow-[2px_2px_0px_0px_#000] animate-pulse">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-black" />
             <span>Evaluating...</span>
           </span>
         );
       case 'retrying':
         return (
-          <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-semibold">
-            <AlertTriangle className="w-3 h-3 text-amber-400" />
-            <span>Backing Off (Try {attemptCount})</span>
+          <span className="flex items-center space-x-1 px-3 py-1 rounded-xl bg-[#FFE2C8] text-amber-950 border-2 border-black text-xs font-bold shadow-[1px_1px_0px_0px_#000]">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-700" />
+            <span>Retry {attemptCount}/3</span>
           </span>
         );
       case 'completed':
         return (
-          <span className="flex items-center space-x-1 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-semibold">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="flex items-center space-x-1 px-3 py-1 rounded-xl bg-[#DDF282] text-black border-2 border-black text-xs font-black shadow-[2px_2px_0px_0px_#000]">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-800" />
             <span>Completed</span>
           </span>
         );
       case 'failed':
         return (
-          <span className="flex items-center space-x-1 px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-semibold">
-            <XCircle className="w-3.5 h-3.5 text-rose-400" />
-            <span>Failed (Isolated)</span>
+          <span className="flex items-center space-x-1 px-3 py-1 rounded-xl bg-[#FFCCD5] text-rose-950 border-2 border-black text-xs font-black shadow-[2px_2px_0px_0px_#000]">
+            <XCircle className="w-3.5 h-3.5 text-rose-700" />
+            <span>Failed</span>
           </span>
         );
       default:
         return (
-          <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-500 text-xs">
+          <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 border border-black/30 text-xs font-bold">
             {status}
           </span>
         );
@@ -157,12 +157,10 @@ export const Step4SequentialDashboard: React.FC<Step4SequentialDashboardProps> =
       }));
     }
 
-    // If sessionData.agents is already an Array
     if (Array.isArray(sessionData.agents)) {
       return sessionData.agents;
     }
 
-    // If sessionData.agents is a Dictionary / Object
     const dict = sessionData.agents as Record<string, any>;
     return ORDERED_AGENT_NAMES.map((name) => {
       const raw = dict[name];
@@ -196,109 +194,105 @@ export const Step4SequentialDashboard: React.FC<Step4SequentialDashboardProps> =
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Intro Header */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-[#FEF08A] border-2 border-black text-black text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_#000]">
           <ShieldAlert className="w-3.5 h-3.5" />
           <span>Step 4 of 6 • Sequential Adversarial Audit</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-          Live Agent Execution Dashboard
-        </h2>
-        <p className="text-sm text-slate-400 max-w-xl mx-auto">
+
+        <div>
+          <div className="inline-block bg-[#C9B7F5] border-2 border-black rounded-xl px-5 py-2 shadow-[3px_3px_0px_0px_#000]">
+            <h2 className="text-2xl sm:text-3xl font-black text-black tracking-tight">
+              Live Agent Execution Dashboard
+            </h2>
+          </div>
+        </div>
+
+        <p className="text-xs sm:text-sm text-slate-700 font-medium max-w-xl mx-auto">
           Seven specialized hiring agents are evaluating your resume sequentially. Each agent acts independently to identify concrete reasons to reject the candidate.
         </p>
       </div>
 
-      {/* Progress Bar */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-2">
+      {/* Progress Bar Card */}
+      <div className="bg-white border-2 border-black rounded-3xl p-6 shadow-[5px_5px_0px_0px_#000] space-y-3">
         <div className="flex justify-between items-center text-xs">
-          <span className="font-semibold uppercase tracking-wider text-slate-400">
+          <span className="font-black uppercase tracking-wider text-black">
             Pipeline Progress: {completedCount} of 7 Agents Completed
           </span>
-          <span className="font-bold text-indigo-400">{progressPercent}%</span>
+          <span className="font-mono font-black text-sm text-black">{progressPercent}%</span>
         </div>
-        <div className="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+        <div className="w-full h-3.5 bg-[#FAF6F0] rounded-full overflow-hidden border-2 border-black">
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all duration-500 ease-out rounded-full"
+            className="h-full bg-black transition-all duration-500 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
 
       {pollError && (
-        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-          Reconnecting to backend status stream... ({pollError})
+        <div className="p-4 rounded-xl bg-[#FFCCD5] border-2 border-black text-rose-950 text-xs sm:text-sm font-bold flex items-center justify-between shadow-[2px_2px_0px_0px_#000]">
+          <span>{pollError}</span>
         </div>
       )}
 
-      {/* Agent Cards Grid */}
+      {/* Agent Cards Stack */}
       <div className="space-y-3">
-        {agents.map((agent, index) => {
+        {agents.map((agent, idx) => {
           const meta = AGENT_METADATA[agent.agent_name] || {
-            order: index + 1,
-            roleDescription: 'Adversarial evaluation agent.',
-            iconColor: 'from-slate-500 to-slate-700',
+            order: idx + 1,
+            roleDescription: 'Specialized evaluator examining candidate claims.',
+            bgColor: 'bg-white',
           };
-
-          const isCurrentRunning = agent.status === 'running';
+          const isCurrent = agent.status === 'running';
 
           return (
             <div
               key={agent.agent_name}
-              className={`rounded-2xl p-4 sm:p-5 border transition-all duration-300 ${
-                isCurrentRunning
-                  ? 'bg-slate-900/90 border-indigo-500/50 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/30 scale-[1.01]'
+              className={`border-2 border-black rounded-2xl p-4 sm:p-5 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                isCurrent
+                  ? 'bg-[#FEF08A] shadow-[4px_4px_0px_0px_#000] scale-[1.01]'
                   : agent.status === 'completed'
-                  ? 'bg-slate-900/40 border-slate-800/80'
-                  : 'bg-slate-900/20 border-slate-850 opacity-70'
+                  ? 'bg-white shadow-[3px_3px_0px_0px_#000]'
+                  : 'bg-white/70 shadow-[2px_2px_0px_0px_#000] opacity-80'
               }`}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start space-x-3.5">
-                  <div
-                    className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${meta.iconColor} flex items-center justify-center text-white text-xs font-black shadow-md flex-shrink-0 mt-0.5`}
-                  >
-                    #{meta.order}
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <h3 className="text-sm font-bold text-white tracking-tight">
-                        {agent.agent_name}
-                      </h3>
-                      {agent.findings_count > 0 && (
-                        <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[11px] font-semibold">
-                          {agent.findings_count} objections identified
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-400 line-clamp-2 max-w-xl">
-                      {meta.roleDescription}
-                    </p>
-                  </div>
+              <div className="flex items-start sm:items-center space-x-3.5">
+                <div className="w-10 h-10 rounded-xl bg-white border-2 border-black font-black text-sm flex items-center justify-center shrink-0 shadow-[2px_2px_0px_0px_#000]">
+                  {meta.order}
                 </div>
 
-                <div className="flex items-center space-x-2 self-end sm:self-center">
-                  {renderStatusBadge(agent.status, agent.attempt_count, agent.retry_reason)}
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-sm font-black text-black">
+                      {agent.agent_name}
+                    </h3>
+                    {agent.findings_count > 0 && (
+                      <span className="px-2 py-0.5 rounded-md bg-[#FFCCD5] border border-black text-[10px] font-black text-rose-950">
+                        {agent.findings_count} objections
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-700 font-medium mt-0.5 max-w-xl">
+                    {meta.roleDescription}
+                  </p>
                 </div>
               </div>
 
-              {agent.error_message && (
-                <div className="mt-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">
-                  <span className="font-semibold">Notice:</span> {agent.error_message} (Pipeline continued safely via fault isolation).
-                </div>
-              )}
+              <div className="shrink-0 self-end sm:self-center">
+                {renderStatusBadge(agent.status, agent.attempt_count, agent.retry_reason)}
+              </div>
             </div>
           );
         })}
       </div>
 
       {sessionData?.status === 'completed' && (
-        <div className="pt-4 text-center">
+        <div className="text-center pt-2">
           <button
             onClick={onAuditCompleted}
-            className="inline-flex items-center space-x-2 px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-bold shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02]"
+            className="inline-flex items-center space-x-2 px-8 py-3.5 rounded-2xl bg-black hover:bg-slate-800 text-white font-black text-sm border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
           >
-            <span>View Aggregated Rejection Report</span>
+            <span>View Full Rejection Report</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

@@ -117,7 +117,7 @@ export const ResumeAuditWidget: React.FC<ResumeAuditWidgetProps> = ({
   };
 
   return (
-    <div className={`w-full ${hideHeader ? '' : 'min-h-screen bg-slate-950'} text-slate-100 flex flex-col font-sans ${compactMode ? 'p-2' : ''}`}>
+    <div className={`w-full ${hideHeader ? '' : 'min-h-screen bg-[#FAF6F0]'} text-slate-900 flex flex-col font-sans ${compactMode ? 'p-2' : ''}`}>
       {!hideHeader && (
         <Header
           hasActiveSession={Boolean(candidateData?.sessionId)}
@@ -131,16 +131,16 @@ export const ResumeAuditWidget: React.FC<ResumeAuditWidgetProps> = ({
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Banner if no API key is configured and on early steps */}
         {currentStep <= 3 && !userSettings.apiKey && onOpenSettings && (
-          <div className="max-w-4xl mx-auto mb-6 p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+          <div className="max-w-4xl mx-auto mb-6 p-4 rounded-2xl bg-[#FEF08A] border-2 border-black text-black text-xs font-bold flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-[4px_4px_0px_0px_#000]">
             <div className="flex items-center space-x-2">
-              <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+              <Sparkles className="w-4 h-4 text-black shrink-0" />
               <span>
-                Want live AI evaluations? Connect your personal Google Gemini API key.
+                Want live AI evaluations? Connect your personal Google Gemini or Ollama API key.
               </span>
             </div>
             <button
               onClick={onOpenSettings}
-              className="px-3 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 hover:text-white border border-indigo-500/40 text-xs font-semibold whitespace-nowrap transition-all"
+              className="px-4 py-1.5 rounded-xl bg-black text-white hover:bg-slate-800 border-2 border-black text-xs font-black whitespace-nowrap shadow-[2px_2px_0px_0px_#000] transition-all"
             >
               Configure API Key →
             </button>
