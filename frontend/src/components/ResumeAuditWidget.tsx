@@ -135,7 +135,7 @@ export const ResumeAuditWidget: React.FC<ResumeAuditWidgetProps> = ({
             <div className="flex items-center space-x-2">
               <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
               <span>
-                Want faster cloud evaluations? Connect your personal Google Gemini or OpenAI API key.
+                Want live AI evaluations? Connect your personal Google Gemini API key.
               </span>
             </div>
             <button

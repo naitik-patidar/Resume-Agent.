@@ -24,8 +24,6 @@ export const Header: React.FC<HeaderProps> = ({
   userSettings,
 }) => {
   const hasKey = Boolean(userSettings?.apiKey && userSettings.apiKey.trim());
-  const providerLabel = userSettings?.provider === 'openai' ? 'OpenAI' : userSettings?.provider === 'ollama' ? 'Ollama' : 'Gemini';
-  const modelLabel = userSettings?.model || 'gemini-2.5-flash';
 
   return (
     <header className="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
@@ -74,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Key className="w-3.5 h-3.5" />
-              <span>AI Models & API Keys</span>
+              <span>API Key</span>
               {hasKey && (
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
               )}
@@ -88,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
           {onTabChange && (
             <button
               onClick={() => onTabChange('settings')}
-              title="Click to configure AI models and API keys"
+              title="Click to configure your Gemini API key"
               className={`flex items-center space-x-1.5 px-3 py-1 rounded-full border text-xs font-medium transition-all ${
                 hasKey
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
@@ -97,7 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
               <span className="font-semibold">
-                {hasKey ? `${providerLabel}: ${modelLabel}` : 'Add API Key'}
+                {hasKey ? 'Gemini Key Connected' : 'Add Gemini Key'}
               </span>
               <span className={`w-1.5 h-1.5 rounded-full ${hasKey ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
             </button>
