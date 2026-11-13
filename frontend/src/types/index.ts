@@ -89,3 +89,26 @@ export interface JobDescriptionData {
   wordCount: number;
   detectedCompetencies: string[];
 }
+
+export type LLMProviderId = 'gemini' | 'openai' | 'ollama';
+
+export interface UserSettings {
+  provider: LLMProviderId;
+  apiKey: string;
+  model: string;
+  baseUrl?: string;
+  apiBaseUrl?: string;
+  isVerified?: boolean;
+  lastVerifiedAt?: string;
+}
+
+export interface VerifyKeyResponse {
+  valid: boolean;
+  provider: string;
+  model?: string;
+  latency_ms?: number;
+  message: string;
+  error?: string;
+  available_models?: string[];
+}
+

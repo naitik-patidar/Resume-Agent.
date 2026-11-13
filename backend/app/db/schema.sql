@@ -6,6 +6,9 @@ CREATE TABLE IF NOT EXISTS audit_sessions (
     status TEXT NOT NULL DEFAULT 'created', -- created, ready, running, completed, failed
     candidate_input_type TEXT, -- upload, pasted
     candidate_name TEXT,
+    llm_provider TEXT, -- gemini, openai, ollama
+    llm_model TEXT,
+    api_key_override TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

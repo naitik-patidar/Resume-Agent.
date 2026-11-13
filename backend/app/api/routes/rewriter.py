@@ -1,7 +1,7 @@
-"""API routes for resume rewriting and factual verification."""
 import json
+from typing import Optional
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 import aiosqlite
 
 from app.agents.rewriter import ResumeRewriterAgent
@@ -11,7 +11,7 @@ from app.models.schemas import (
     VerificationResultResponse,
 )
 from app.services.aggregator import build_audit_report
-from app.services.llm.client import get_llm_service
+from app.services.llm.client import LLMService, get_llm_service
 from app.services.verifier import VerificationEngine
 
 
@@ -21,13 +21,40 @@ router = APIRouter()
 @router.post("/rewrite/{session_id}", response_model=RewriteResponse, summary="Generate truthful improved resume")
 async def rewrite_resume(
     session_id: str,
-    db: aiosqlite.Connection = Depends(get_db)
+    db: aiosqlite.Connection = Depends(get_db),
+    x_gemini_api_key: Optional[str] = Header(None, alias="X-Gemini-Api-Key"),
+    x_openai_api_key: Optional[str] = Header(None, alias="X-OpenAI-Api-Key"),
+    x_api_key: Optional[str] = Header(None, alias="X-Api-Key"),
+    x_llm_provider: Optional[str] = Header(None, alias="X-LLM-Provider"),
+    x_llm_model: Optional[str] = Header(None, alias="X-LLM-Model"),
 ):
     """Trigger the Resume Rewriter Agent to correct all supported objections.
     
     Strictly preserves candidate truthfulness (CON-005) and runs the automated
     Factual Release Gate.
     """
+    # 0. Query session and API key configuration
+    s_cur = await db.execute(
+        "SELECT llm_provider, llm_model, api_key_override FROM audit_sessions WHERE id = ?",
+        (session_id,)
+    )
+    s_row = await s_cur.fetchone()
+
+    eff_key = (s_row["api_key_override"] if s_row else None) or x_gemini_api_key or x_openai_api_key or x_api_key
+    eff_prov = (s_row["llm_provider"] if s_row else None) or x_llm_provider or "gemini"
+    eff_model = (s_row["llm_model"] if s_row else None) or x_llm_model
+
+    if eff_key:
+        llm_service = LLMService(
+            provider=eff_prov,
+            gemini_api_key=eff_key if (eff_prov == "gemini" or not eff_prov) else None,
+            gemini_model=eff_model if eff_prov == "gemini" else None,
+            openai_api_key=eff_key if eff_prov == "openai" else None,
+            openai_model=eff_model if eff_prov == "openai" else None,
+        )
+    else:
+        llm_service = get_llm_service()
+
     # 1. Fetch candidate input
     c_cur = await db.execute("SELECT raw_text FROM candidate_inputs WHERE session_id = ?", (session_id,))
     c_row = await c_cur.fetchone()
@@ -50,7 +77,7 @@ async def rewrite_resume(
     report_dict = {"findings": findings}
 
     # 4. Generate improved rewrite
-    rewriter = ResumeRewriterAgent(get_llm_service())
+    rewriter = ResumeRewriterAgent(llm_service)
     rewrite_output = await rewriter.rewrite(
         candidate_text=c_row["raw_text"],
         job_description=jd_row["raw_text"],

@@ -73,12 +73,57 @@ async def get_session_status(session_id: str, db: aiosqlite.Connection = Depends
         if r["status"] == "running":
             current_agent = r["agent_name"]
 
+    # Auto-advance for serverless environments (e.g. Vercel) if no background worker is active
+    current_status = session_row["status"]
+    if current_status == SessionStatusEnum.RUNNING.value and current_agent is None:
+        has_queued = any(r["status"] == AgentExecutionStatusEnum.QUEUED.value for r in exec_rows)
+        if has_queued:
+            from app.agents.orchestrator import run_next_agent_step
+            await run_next_agent_step(session_id, db)
+            
+            # Re-read updated executions
+            exec_cursor = await db.execute(
+                """SELECT ae.agent_name, ae.execution_order, ae.status, ae.attempt_count,
+                          ae.latency_ms, ae.category_score, ae.summary, ae.error_msg,
+                          COUNT(af.id) as findings_count
+                   FROM agent_executions ae
+                   LEFT JOIN agent_findings af ON ae.id = af.execution_id
+                   WHERE ae.session_id = ?
+                   GROUP BY ae.id
+                   ORDER BY ae.execution_order ASC""",
+                (session_id,)
+            )
+            exec_rows = await exec_cursor.fetchall()
+            agent_states = {}
+            current_agent = None
+            for r in exec_rows:
+                state = AgentExecutionState(
+                    agent_name=r["agent_name"],
+                    execution_order=r["execution_order"],
+                    status=AgentExecutionStatusEnum(r["status"]),
+                    attempt_count=r["attempt_count"] or 0,
+                    latency_ms=r["latency_ms"] or 0,
+                    category_score=r["category_score"],
+                    findings_count=r["findings_count"] or 0,
+                    summary=r["summary"],
+                    error_msg=r["error_msg"]
+                )
+                agent_states[r["agent_name"]] = state
+                if r["status"] == "running":
+                    current_agent = r["agent_name"]
+
+            # Refresh session status
+            s_cur = await db.execute("SELECT status FROM audit_sessions WHERE id = ?", (session_id,))
+            s_row = await s_cur.fetchone()
+            if s_row:
+                current_status = s_row["status"]
+
     raw_input_type = session_row["candidate_input_type"]
     input_type = InputTypeEnum(raw_input_type) if raw_input_type else None
 
     return SessionStatusResponse(
         session_id=session_row["id"],
-        status=SessionStatusEnum(session_row["status"]),
+        status=SessionStatusEnum(current_status),
         candidate_input_type=input_type,
         candidate_name=session_row["candidate_name"],
         has_resume=has_input,

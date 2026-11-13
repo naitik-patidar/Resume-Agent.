@@ -1,9 +1,19 @@
-"""Document parser for PDF and DOCX resumes using PyMuPDF and python-docx."""
+"""Document parser for PDF and DOCX resumes using PyMuPDF / pypdf and python-docx."""
 import io
 import re
 from pathlib import Path
 from typing import Dict, List, Tuple
-import pymupdf
+
+try:
+    import pymupdf
+except ImportError:
+    pymupdf = None
+
+try:
+    import pypdf
+except ImportError:
+    pypdf = None
+
 from docx import Document
 
 
@@ -40,14 +50,24 @@ def validate_file_header(file_bytes: bytes, filename: str) -> str:
 
 
 def parse_pdf(file_bytes: bytes) -> str:
-    """Extract clean text from PDF bytes using PyMuPDF."""
+    """Extract clean text from PDF bytes using PyMuPDF or pypdf."""
     try:
-        doc = pymupdf.open(stream=file_bytes, filetype="pdf")
         text_parts = []
-        for page_num in range(len(doc)):
-            page = doc[page_num]
-            text_parts.append(page.get_text("text"))
-        doc.close()
+        if pymupdf is not None:
+            doc = pymupdf.open(stream=file_bytes, filetype="pdf")
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                text_parts.append(page.get_text("text"))
+            doc.close()
+        elif pypdf is not None:
+            reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+            for page in reader.pages:
+                extracted = page.extract_text()
+                if extracted:
+                    text_parts.append(extracted)
+        else:
+            raise DocumentParsingError("No PDF parsing library available (install pypdf or pymupdf).")
+
         full_text = "\n".join(text_parts).strip()
         if not full_text:
             raise DocumentParsingError("PDF is empty or contains only non-extractable scanned images.")

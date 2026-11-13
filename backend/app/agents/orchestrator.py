@@ -169,3 +169,140 @@ async def run_sequential_audit(
     )
     await db.commit()
     logger.info(f"Sequential audit for session {session_id} finished with status '{final_status}'. ({completed_count}/7 succeeded)")
+
+
+async def run_next_agent_step(
+    session_id: str,
+    db: aiosqlite.Connection,
+    llm_service: Optional[LLMService] = None,
+) -> bool:
+    """Execute the next queued agent in sequence. Returns True if an agent was executed, False otherwise."""
+    # Check session
+    s_cur = await db.execute(
+        "SELECT status, llm_provider, llm_model, api_key_override FROM audit_sessions WHERE id = ?",
+        (session_id,)
+    )
+    session = await s_cur.fetchone()
+    if not session or session["status"] not in (SessionStatusEnum.RUNNING.value, SessionStatusEnum.READY.value, "started"):
+        return False
+
+    # Check if an agent is currently running
+    r_cur = await db.execute(
+        "SELECT id, agent_name FROM agent_executions WHERE session_id = ? AND status = ?",
+        (session_id, AgentExecutionStatusEnum.RUNNING.value)
+    )
+    running_agent = await r_cur.fetchone()
+    if running_agent:
+        return False
+
+    # Find next queued agent
+    q_cur = await db.execute(
+        "SELECT id, agent_name, execution_order FROM agent_executions WHERE session_id = ? AND status = ? ORDER BY execution_order ASC LIMIT 1",
+        (session_id, AgentExecutionStatusEnum.QUEUED.value)
+    )
+    next_exec = await q_cur.fetchone()
+    if not next_exec:
+        # Check if all completed
+        f_cur = await db.execute(
+            "SELECT count(*) as total, sum(case when status = 'completed' then 1 else 0 end) as completed FROM agent_executions WHERE session_id = ?",
+            (session_id,)
+        )
+        counts = await f_cur.fetchone()
+        if counts and counts["total"] > 0:
+            final_status = SessionStatusEnum.COMPLETED.value if counts["completed"] > 0 else SessionStatusEnum.FAILED.value
+            await db.execute("UPDATE audit_sessions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (final_status, session_id))
+            await db.commit()
+        return False
+
+    # Resolve LLM Service
+    if not llm_service:
+        prov = session["llm_provider"]
+        model = session["llm_model"]
+        key = session["api_key_override"]
+        if key:
+            llm_service = LLMService(
+                provider=prov,
+                gemini_api_key=key if (prov == "gemini" or not prov) else None,
+                gemini_model=model if prov == "gemini" else None,
+                openai_api_key=key if prov == "openai" else None,
+                openai_model=model if prov == "openai" else None,
+            )
+        else:
+            llm_service = get_llm_service()
+
+    # Load candidate and job text
+    c_cursor = await db.execute("SELECT raw_text FROM candidate_inputs WHERE session_id = ?", (session_id,))
+    c_row = await c_cursor.fetchone()
+    j_cursor = await db.execute("SELECT raw_text FROM job_descriptions WHERE session_id = ?", (session_id,))
+    j_row = await j_cursor.fetchone()
+    if not c_row or not j_row:
+        return False
+
+    candidate_text = c_row["raw_text"]
+    job_description_text = j_row["raw_text"]
+
+    agent_name = next_exec["agent_name"]
+    execution_id = next_exec["id"]
+
+    agents = get_sequential_agents()
+    target_agent = next((a for a in agents if a.name == agent_name), None)
+    if not target_agent:
+        return False
+
+    start_time = time.monotonic()
+    await db.execute(
+        "UPDATE agent_executions SET status = ?, started_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (AgentExecutionStatusEnum.RUNNING.value, execution_id)
+    )
+    await db.commit()
+
+    try:
+        audit_output = await target_agent.evaluate(candidate_text, job_description_text, llm_service)
+        latency_ms = int((time.monotonic() - start_time) * 1000)
+
+        for finding in audit_output.findings:
+            fid = str(uuid.uuid4())
+            await db.execute(
+                """INSERT INTO agent_findings
+                   (id, session_id, execution_id, agent_name, issue_title, severity,
+                    evidence_from_resume, reason_for_rejection, suggested_fix, confidence, requires_user_input)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    fid, session_id, execution_id, target_agent.name, finding.issue_title,
+                    finding.severity.value, finding.evidence_from_resume, finding.reason_for_rejection,
+                    finding.suggested_fix, finding.confidence, 1 if finding.requires_user_input else 0
+                )
+            )
+
+        await db.execute(
+            """UPDATE agent_executions
+               SET status = ?, attempt_count = 1, latency_ms = ?,
+                   category_score = ?, summary = ?, completed_at = CURRENT_TIMESTAMP
+               WHERE id = ?""",
+            (AgentExecutionStatusEnum.COMPLETED.value, latency_ms, audit_output.category_score, audit_output.summary, execution_id)
+        )
+        await db.commit()
+    except Exception as exc:
+        latency_ms = int((time.monotonic() - start_time) * 1000)
+        await db.execute(
+            """UPDATE agent_executions
+               SET status = ?, latency_ms = ?, error_msg = ?, completed_at = CURRENT_TIMESTAMP
+               WHERE id = ?""",
+            (AgentExecutionStatusEnum.FAILED.value, latency_ms, str(exc), execution_id)
+        )
+        await db.commit()
+
+    # Check if this was the final queued agent
+    rem_cur = await db.execute(
+        "SELECT count(*) as queued FROM agent_executions WHERE session_id = ? AND status = ?",
+        (session_id, AgentExecutionStatusEnum.QUEUED.value)
+    )
+    rem_row = await rem_cur.fetchone()
+    if rem_row and rem_row["queued"] == 0:
+        await db.execute(
+            "UPDATE audit_sessions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (SessionStatusEnum.COMPLETED.value, session_id)
+        )
+        await db.commit()
+
+    return True

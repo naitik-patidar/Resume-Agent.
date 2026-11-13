@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles } from 'lucide-react';
 import { Header } from './Header';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Step1CandidateInput } from './Step1CandidateInput';
@@ -7,23 +8,28 @@ import { Step3ConfirmationScreen } from './Step3ConfirmationScreen';
 import { Step4SequentialDashboard } from './Step4SequentialDashboard';
 import { Step5RejectionReport } from './Step5RejectionReport';
 import { Step6RewriteDiffAndExport } from './Step6RewriteDiffAndExport';
-import { startAudit, getAuditReport, rewriteResume } from '../services/api';
+import { startAudit, getAuditReport, rewriteResume, getUserSettings } from '../services/api';
 import {
   AuditReport,
   CandidateData,
   JobDescriptionData,
   RewriteResponse,
+  UserSettings,
   VerificationResult,
 } from '../types';
 
 export interface ResumeAuditWidgetProps {
   compactMode?: boolean;
   onAuditFinished?: (report: AuditReport) => void;
+  hideHeader?: boolean;
+  onOpenSettings?: () => void;
 }
 
 export const ResumeAuditWidget: React.FC<ResumeAuditWidgetProps> = ({
   compactMode = false,
   onAuditFinished,
+  hideHeader = false,
+  onOpenSettings,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [candidateData, setCandidateData] = useState<CandidateData | null>(null);
@@ -31,6 +37,11 @@ export const ResumeAuditWidget: React.FC<ResumeAuditWidgetProps> = ({
   const [auditReport, setAuditReport] = useState<AuditReport | null>(null);
   const [rewriteData, setRewriteData] = useState<RewriteResponse | null>(null);
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
+  const [userSettings, setUserSettings] = useState<UserSettings>(() => getUserSettings());
+
+  useEffect(() => {
+    setUserSettings(getUserSettings());
+  }, [currentStep]);
 
   const [isStartingAudit, setIsStartingAudit] = useState(false);
   const [isRewriting, setIsRewriting] = useState(false);
@@ -106,14 +117,36 @@ export const ResumeAuditWidget: React.FC<ResumeAuditWidgetProps> = ({
   };
 
   return (
-    <div className={`w-full min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans ${compactMode ? 'p-2' : ''}`}>
-      <Header
-        hasActiveSession={Boolean(candidateData?.sessionId)}
-        onReset={handleReset}
-      />
+    <div className={`w-full ${hideHeader ? '' : 'min-h-screen bg-slate-950'} text-slate-100 flex flex-col font-sans ${compactMode ? 'p-2' : ''}`}>
+      {!hideHeader && (
+        <Header
+          hasActiveSession={Boolean(candidateData?.sessionId)}
+          onReset={handleReset}
+          userSettings={userSettings}
+          onTabChange={onOpenSettings ? () => onOpenSettings() : undefined}
+        />
+      )}
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        {/* Banner if no API key is configured and on early steps */}
+        {currentStep <= 3 && !userSettings.apiKey && onOpenSettings && (
+          <div className="max-w-4xl mx-auto mb-6 p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span>
+                Want faster cloud evaluations? Connect your personal Google Gemini or OpenAI API key.
+              </span>
+            </div>
+            <button
+              onClick={onOpenSettings}
+              className="px-3 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 hover:text-white border border-indigo-500/40 text-xs font-semibold whitespace-nowrap transition-all"
+            >
+              Configure API Key →
+            </button>
+          </div>
+        )}
+
         {generalError && (
           <div className="max-w-4xl mx-auto mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center justify-between">
             <span>{generalError}</span>

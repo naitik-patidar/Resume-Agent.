@@ -1,11 +1,11 @@
 """API routes for triggering sequential audits and fetching aggregated reports."""
 import asyncio
 from typing import Dict, List, Optional
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, status
 import aiosqlite
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from app.agents.orchestrator import run_sequential_audit
+from app.agents.orchestrator import run_next_agent_step, run_sequential_audit
 from app.config import settings
 from app.db.session import get_db
 from app.models.schemas import (
@@ -15,6 +15,7 @@ from app.models.schemas import (
     SeverityEnum,
 )
 from app.services.aggregator import build_audit_report
+from app.services.llm.client import LLMService, get_llm_service
 
 
 router = APIRouter()
@@ -22,6 +23,10 @@ router = APIRouter()
 
 class AnalyzeRequest(BaseModel):
     session_id: str
+    api_key: Optional[str] = Field(default=None, description="Optional custom user API key")
+    provider: Optional[str] = Field(default=None, description="Optional AI provider (gemini, openai, ollama)")
+    model: Optional[str] = Field(default=None, description="Optional target model")
+    base_url: Optional[str] = Field(default=None, description="Optional custom endpoint URL")
 
 
 class AnalyzeResponse(BaseModel):
@@ -31,18 +36,46 @@ class AnalyzeResponse(BaseModel):
 
 
 async def background_audit_runner(session_id: str):
-    """Isolated background task worker that creates its own SQLite connection."""
+    """Isolated background task worker that creates its own SQLite connection and uses session-specific LLM config."""
     async with aiosqlite.connect(settings.DATABASE_PATH) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("PRAGMA foreign_keys = ON;")
-        await run_sequential_audit(session_id, db)
+
+        # Query session-specific LLM settings
+        cursor = await db.execute(
+            "SELECT llm_provider, llm_model, api_key_override FROM audit_sessions WHERE id = ?",
+            (session_id,)
+        )
+        session_row = await cursor.fetchone()
+        custom_llm = None
+        default_svc = get_llm_service()
+        if default_svc.mock_provider:
+            custom_llm = default_svc
+        elif session_row and session_row["api_key_override"]:
+            prov = session_row["llm_provider"] or "gemini"
+            key = session_row["api_key_override"]
+            model = session_row["llm_model"]
+            custom_llm = LLMService(
+                provider=prov,
+                gemini_api_key=key if (prov == "gemini" or not prov) else None,
+                gemini_model=model if prov == "gemini" else None,
+                openai_api_key=key if prov == "openai" else None,
+                openai_model=model if prov == "openai" else None,
+            )
+
+        await run_sequential_audit(session_id, db, llm_service=custom_llm)
 
 
 @router.post("/analyze", response_model=AnalyzeResponse, summary="Start sequential seven-agent resume audit")
 async def start_audit(
     payload: AnalyzeRequest,
     background_tasks: BackgroundTasks,
-    db: aiosqlite.Connection = Depends(get_db)
+    db: aiosqlite.Connection = Depends(get_db),
+    x_gemini_api_key: Optional[str] = Header(None, alias="X-Gemini-Api-Key"),
+    x_openai_api_key: Optional[str] = Header(None, alias="X-OpenAI-Api-Key"),
+    x_api_key: Optional[str] = Header(None, alias="X-Api-Key"),
+    x_llm_provider: Optional[str] = Header(None, alias="X-LLM-Provider"),
+    x_llm_model: Optional[str] = Header(None, alias="X-LLM-Model"),
 ):
     """Initiate the sequential 7-agent audit pipeline.
     
@@ -73,6 +106,27 @@ async def start_audit(
             detail="Cannot start audit: Target job description is required."
         )
 
+    # Determine user-provided API key & model
+    effective_key = payload.api_key or x_gemini_api_key or x_openai_api_key or x_api_key
+    effective_provider = payload.provider or x_llm_provider
+    if not effective_provider and effective_key:
+        if x_openai_api_key or (effective_key and effective_key.startswith("sk-")):
+            effective_provider = "openai"
+        else:
+            effective_provider = "gemini"
+
+    effective_model = payload.model or x_llm_model
+
+    # Persist user LLM configuration for this session
+    if effective_key or effective_provider or effective_model:
+        await db.execute(
+            """UPDATE audit_sessions
+               SET llm_provider = ?, llm_model = ?, api_key_override = ?, updated_at = CURRENT_TIMESTAMP
+               WHERE id = ?""",
+            (effective_provider, effective_model, effective_key, sid)
+        )
+        await db.commit()
+
     # Launch background worker
     background_tasks.add_task(background_audit_runner, sid)
 
@@ -81,6 +135,13 @@ async def start_audit(
         status="started",
         message="Sequential audit initiated. Monitor progress via /api/resume/status/{session_id}."
     )
+
+
+@router.post("/step/{session_id}", summary="Execute next agent step (Serverless resilient)")
+async def step_audit(session_id: str, db: aiosqlite.Connection = Depends(get_db)):
+    """Execute the next queued agent. Ideal for serverless environments (e.g. Vercel) where background processes freeze."""
+    executed = await run_next_agent_step(session_id, db)
+    return {"session_id": session_id, "step_executed": executed}
 
 
 @router.get("/report/{session_id}", response_model=AuditReportResponse, summary="Get consolidated rejection report")

@@ -1,6 +1,5 @@
-"""API router unifying all platform routes."""
 from fastapi import APIRouter
-from app.api.routes import resume, experience, job, status, audit, rewriter, download
+from app.api.routes import resume, experience, job, status, audit, rewriter, download, llm
 
 
 api_router = APIRouter()
@@ -23,3 +22,6 @@ api_router.include_router(download.router, prefix="/resume", tags=["download"])
 
 # Status & session route
 api_router.include_router(status.router, prefix="/resume", tags=["status"])
+
+# LLM provider configuration and key validation routes
+api_router.include_router(llm.router, prefix="/llm", tags=["llm"])

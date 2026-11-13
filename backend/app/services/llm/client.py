@@ -4,6 +4,7 @@ import json
 import logging
 import random
 import re
+import time
 from typing import Any, Dict, List, Optional, Type, TypeVar
 import httpx
 from pydantic import BaseModel
@@ -352,9 +353,17 @@ class LLMService:
         ollama_base_url: Optional[str] = None,
         ollama_model: Optional[str] = None,
         mock_provider: Optional[Any] = None,
+        provider: Optional[str] = None,
+        openai_api_key: Optional[str] = None,
+        openai_model: Optional[str] = None,
+        openai_base_url: Optional[str] = None,
     ):
+        self.provider = (provider or "").lower().strip() or None
         self.gemini_api_key = gemini_api_key or settings.GEMINI_API_KEY
         self.gemini_model = gemini_model or settings.GEMINI_MODEL
+        self.openai_api_key = openai_api_key or settings.OPENAI_API_KEY
+        self.openai_model = openai_model or settings.OPENAI_MODEL
+        self.openai_base_url = openai_base_url or settings.OPENAI_BASE_URL
         self.ollama_base_url = _normalize_ollama_url(ollama_base_url or settings.OLLAMA_BASE_URL)
         self.ollama_model = ollama_model or settings.OLLAMA_MODEL
         self.mock_provider = mock_provider
@@ -408,7 +417,7 @@ class LLMService:
         response_model: Type[T],
         agent_name: str = "General",
     ) -> T:
-        """Generate structured Pydantic output using Gemini, Ollama, or resilient heuristic fallback."""
+        """Generate structured Pydantic output using Gemini, OpenAI, Ollama, or resilient heuristic fallback."""
         if self.mock_provider:
             return await self.mock_provider.generate_structured(
                 system_prompt=system_prompt,
@@ -417,8 +426,29 @@ class LLMService:
                 agent_name=agent_name,
             )
 
-        # 1. Primary: Gemini API if key is present
-        if self.gemini_api_key and self.gemini_api_key.strip():
+        # Determine target provider preference
+        target_provider = self.provider
+        if not target_provider:
+            if self.gemini_api_key and self.gemini_api_key.strip():
+                target_provider = "gemini"
+            elif self.openai_api_key and self.openai_api_key.strip():
+                target_provider = "openai"
+            else:
+                target_provider = "ollama"
+
+        # 1. OpenAI provider (if specified or primary)
+        if target_provider == "openai" and self.openai_api_key and self.openai_api_key.strip():
+            try:
+                return await self._call_openai_with_retry(
+                    system_prompt, user_prompt, response_model, agent_name
+                )
+            except LLMServiceError as err:
+                logger.warning(
+                    f"OpenAI API failed for agent '{agent_name}': {err.message}. Attempting fallback."
+                )
+
+        # 2. Gemini provider (if specified or primary)
+        if (target_provider == "gemini" or not target_provider) and self.gemini_api_key and self.gemini_api_key.strip():
             try:
                 return await self._call_gemini_with_retry(
                     system_prompt, user_prompt, response_model, agent_name
@@ -428,7 +458,16 @@ class LLMService:
                     f"Gemini API failed for agent '{agent_name}': {err.message}. Attempting Ollama fallback."
                 )
 
-        # 2. Secondary: Ollama local instance
+        # 3. If OpenAI was not targeted first but key exists, try it as fallback before Ollama
+        if target_provider != "openai" and self.openai_api_key and self.openai_api_key.strip():
+            try:
+                return await self._call_openai_with_retry(
+                    system_prompt, user_prompt, response_model, agent_name
+                )
+            except LLMServiceError as err:
+                logger.warning(f"OpenAI fallback failed for agent '{agent_name}': {err.message}.")
+
+        # 4. Ollama local instance
         try:
             return await self._call_ollama(system_prompt, user_prompt, response_model, agent_name)
         except Exception as ollama_err:
@@ -436,7 +475,7 @@ class LLMService:
                 f"Ollama execution failed for agent '{agent_name}' ({ollama_err}). Activating resilient fallback."
             )
 
-        # 3. Resilient Fallback: Domain heuristic generator ensuring pipeline continuity
+        # 5. Resilient Fallback: Domain heuristic generator ensuring pipeline continuity
         return self._call_heuristic_fallback(user_prompt, response_model, agent_name)
 
     def _call_heuristic_fallback(
@@ -587,6 +626,90 @@ class LLMService:
 
             return response_model.model_validate(parsed_json)
 
+    async def _call_openai_with_retry(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        response_model: Type[T],
+        agent_name: str,
+    ) -> T:
+        """Call OpenAI-compatible API with bounded exponential backoff, jitter, and JSON validation."""
+        endpoint = f"{self.openai_base_url.rstrip('/')}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.openai_api_key}",
+            "Content-Type": "application/json",
+        }
+        schema_json = json.dumps(response_model.model_json_schema())
+        payload = {
+            "model": self.openai_model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": f"{system_prompt}\n\nYou must return strictly valid JSON matching this schema:\n{schema_json}",
+                },
+                {"role": "user", "content": f"Candidate / Job Input:\n{user_prompt}"},
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.2,
+        }
+
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            for attempt in range(settings.MAX_RETRIES + 1):
+                try:
+                    resp = await client.post(endpoint, headers=headers, json=payload)
+                    if resp.status_code == 429 and attempt < settings.MAX_RETRIES:
+                        wait_sec = min(
+                            settings.MAX_BACKOFF_SECONDS,
+                            settings.BACKOFF_BASE_SECONDS * (2 ** attempt),
+                        ) + random.uniform(0.1, 0.5)
+                        logger.info(f"OpenAI 429 rate limit. Backing off for {wait_sec:.2f}s...")
+                        await asyncio.sleep(wait_sec)
+                        continue
+
+                    if resp.status_code != 200:
+                        raise LLMServiceError(
+                            f"OpenAI returned HTTP {resp.status_code}: {resp.text}",
+                            provider="openai",
+                            retryable=(resp.status_code == 429),
+                        )
+
+                    data = resp.json()
+                    choices = data.get("choices", [])
+                    if not choices:
+                        raise LLMServiceError("OpenAI returned empty choices list.", provider="openai", retryable=True)
+
+                    raw_content = choices[0].get("message", {}).get("content", "")
+                    if not raw_content:
+                        raise LLMServiceError("OpenAI returned empty text response.", provider="openai", retryable=True)
+
+                    parsed_json = extract_json_payload(raw_content)
+
+                    # Normalize before validation
+                    if response_model.__name__ == "AgentAuditOutput":
+                        parsed_json = _normalize_audit_output_payload(parsed_json, agent_name)
+                    elif response_model.__name__ == "RewriterLLMOutput":
+                        parsed_json = _normalize_rewriter_output_payload(parsed_json, user_prompt)
+
+                    return response_model.model_validate(parsed_json)
+
+                except Exception as exc:
+                    if isinstance(exc, LLMServiceError) and not exc.retryable:
+                        raise
+                    if attempt < settings.MAX_RETRIES:
+                        wait_sec = min(
+                            settings.MAX_BACKOFF_SECONDS,
+                            settings.BACKOFF_BASE_SECONDS * (2 ** attempt),
+                        ) + random.uniform(0.1, 0.5)
+                        await asyncio.sleep(wait_sec)
+                        continue
+                    raise LLMServiceError(
+                        f"OpenAI API error for agent '{agent_name}': {str(exc)}",
+                        provider="openai",
+                        retryable=False,
+                    )
+
+        raise LLMServiceError(f"OpenAI retries exhausted for agent '{agent_name}'.", provider="openai", retryable=False)
+
 
 _default_llm_service: Optional[LLMService] = None
 
@@ -603,3 +726,145 @@ def set_llm_service(service: LLMService) -> None:
     """Override default LLMService (used for test fixtures)."""
     global _default_llm_service
     _default_llm_service = service
+
+
+async def test_llm_connection(
+    provider: str,
+    api_key: Optional[str] = None,
+    model: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Validate user-provided API key and model connectivity."""
+    start_time = time.monotonic()
+    provider_clean = (provider or "gemini").lower().strip()
+
+    if provider_clean == "gemini":
+        key = api_key or settings.GEMINI_API_KEY
+        if not key or not key.strip():
+            return {
+                "valid": False,
+                "provider": "gemini",
+                "message": "Gemini API key is required. Obtain a free key from https://aistudio.google.com/app/apikey",
+                "error": "Missing API key",
+            }
+        model_name = model or settings.GEMINI_MODEL or "gemini-2.5-flash"
+        try:
+            from google import genai
+            from google.genai import types
+
+            client = genai.Client(api_key=key.strip())
+            # Fast verification with minimal token count
+            resp = await asyncio.to_thread(
+                client.models.generate_content,
+                model=model_name,
+                contents="Hello, reply with JSON: {\"status\": \"ok\"}",
+                config=types.GenerateContentConfig(response_mime_type="application/json", max_output_tokens=30),
+            )
+            latency_ms = int((time.monotonic() - start_time) * 1000)
+            return {
+                "valid": True,
+                "provider": "gemini",
+                "model": model_name,
+                "latency_ms": latency_ms,
+                "message": f"Successfully connected to Google Gemini ({model_name}) in {latency_ms}ms!",
+            }
+        except Exception as exc:
+            latency_ms = int((time.monotonic() - start_time) * 1000)
+            return {
+                "valid": False,
+                "provider": "gemini",
+                "model": model_name,
+                "latency_ms": latency_ms,
+                "message": f"Gemini connection failed: {str(exc)}",
+                "error": str(exc),
+            }
+
+    elif provider_clean == "openai":
+        key = api_key or settings.OPENAI_API_KEY
+        if not key or not key.strip():
+            return {
+                "valid": False,
+                "provider": "openai",
+                "message": "OpenAI API key is required.",
+                "error": "Missing API key",
+            }
+        model_name = model or settings.OPENAI_MODEL or "gpt-4o-mini"
+        endpoint = f"{(base_url or settings.OPENAI_BASE_URL).rstrip('/')}/chat/completions"
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as http_client:
+                resp = await http_client.post(
+                    endpoint,
+                    headers={"Authorization": f"Bearer {key.strip()}", "Content-Type": "application/json"},
+                    json={
+                        "model": model_name,
+                        "messages": [{"role": "user", "content": "ping"}],
+                        "max_tokens": 5,
+                    },
+                )
+                latency_ms = int((time.monotonic() - start_time) * 1000)
+                if resp.status_code == 200:
+                    return {
+                        "valid": True,
+                        "provider": "openai",
+                        "model": model_name,
+                        "latency_ms": latency_ms,
+                        "message": f"Successfully connected to OpenAI ({model_name}) in {latency_ms}ms!",
+                    }
+                else:
+                    return {
+                        "valid": False,
+                        "provider": "openai",
+                        "model": model_name,
+                        "latency_ms": latency_ms,
+                        "message": f"OpenAI returned HTTP {resp.status_code}: {resp.text}",
+                        "error": resp.text,
+                    }
+        except Exception as exc:
+            latency_ms = int((time.monotonic() - start_time) * 1000)
+            return {
+                "valid": False,
+                "provider": "openai",
+                "model": model_name,
+                "latency_ms": latency_ms,
+                "message": f"OpenAI connection error: {str(exc)}",
+                "error": str(exc),
+            }
+
+    elif provider_clean == "ollama":
+        ollama_url = _normalize_ollama_url(base_url or settings.OLLAMA_BASE_URL)
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as http_client:
+                resp = await http_client.get(f"{ollama_url.rstrip('/')}/api/tags")
+                latency_ms = int((time.monotonic() - start_time) * 1000)
+                if resp.status_code == 200:
+                    tags = resp.json().get("models", [])
+                    model_names = [m.get("name", "") for m in tags]
+                    return {
+                        "valid": True,
+                        "provider": "ollama",
+                        "model": model or (model_names[0] if model_names else "default"),
+                        "available_models": model_names,
+                        "latency_ms": latency_ms,
+                        "message": f"Ollama local instance active ({len(model_names)} models found).",
+                    }
+                return {
+                    "valid": False,
+                    "provider": "ollama",
+                    "latency_ms": latency_ms,
+                    "message": f"Ollama returned HTTP {resp.status_code}",
+                    "error": resp.text,
+                }
+        except Exception as exc:
+            return {
+                "valid": False,
+                "provider": "ollama",
+                "message": f"Could not reach Ollama at {ollama_url}. Is Ollama running?",
+                "error": str(exc),
+            }
+
+    return {
+        "valid": False,
+        "provider": provider_clean,
+        "message": f"Unknown provider: '{provider}'",
+        "error": "Unsupported provider",
+    }

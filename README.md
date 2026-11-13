@@ -224,6 +224,29 @@ cd backend
 
 ---
 
+## Deploying on Vercel & Bring Your Own Key (BYOK)
+
+The platform is fully prepared for Vercel deployment with a dedicated **AI Models & API Keys** page where users can input their own Google Gemini or OpenAI API keys directly in the browser:
+
+### 1. In-App API Key Configuration Page
+Users can navigate to **"AI Models & API Keys"** in the top navigation bar to:
+- Choose their preferred cloud provider (**Google Gemini** or **OpenAI**) or local **Ollama**.
+- Select target models (e.g. `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-pro`, `gpt-4o-mini`).
+- Paste their API key (with direct links to obtain free Gemini keys from Google AI Studio).
+- Test connection live with instant latency feedback.
+- Keys are stored solely in the candidate's browser `localStorage` and sent via encrypted HTTPS headers.
+
+### 2. Vercel Deployment Guide
+For complete step-by-step instructions on deploying the frontend to Vercel and connecting it to your cloud backend (or running serverless), see [VERCEL_DEPLOYMENT.md](file:///Users/naitikpatidar/Downloads/AI%20MULTI-AGENT%20RESUME%20REJECTION%20&%20IMPROVEMENT%20PLATFORM/VERCEL_DEPLOYMENT.md).
+
+```bash
+# Deploy to Vercel using the Vercel CLI
+npm i -g vercel
+vercel
+```
+
+---
+
 ## AI Provider Configuration
 
 In `backend/.env`:
