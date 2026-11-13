@@ -226,24 +226,27 @@ cd backend
 
 ## Deploying on Vercel & Bring Your Own Key (BYOK)
 
-The platform is fully prepared for Vercel deployment with a dedicated **AI Models & API Keys** page where users can input their own Google Gemini or OpenAI API keys directly in the browser:
+The platform is fully prepared for Vercel deployment with a streamlined **Submit your API key** page where users can input their personal Google Gemini, OpenAI, or Ollama API endpoints directly in the browser:
 
 ### 1. In-App API Key Configuration Page
-Users can navigate to **"AI Models & API Keys"** in the top navigation bar to:
-- Choose their preferred cloud provider (**Google Gemini** or **OpenAI**) or local **Ollama**.
-- Select target models (e.g. `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-pro`, `gpt-4o-mini`).
+Users can navigate to **"Submit your API key"** in the top navigation bar to:
+- Choose between **Public Cloud API** (Google Gemini / OpenAI) or **Local Ollama**.
 - Paste their API key (with direct links to obtain free Gemini keys from Google AI Studio).
-- Test connection live with instant latency feedback.
-- Keys are stored solely in the candidate's browser `localStorage` and sent via encrypted HTTPS headers.
+- Test connection live with instant verification.
+- Keys are stored securely in the browser's `localStorage` and sent via encrypted HTTPS headers (`X-Gemini-Api-Key` / `X-OpenAI-Api-Key`).
 
-### 2. Vercel Deployment Guide
-For complete step-by-step instructions on deploying the frontend to Vercel and connecting it to your cloud backend (or running serverless), see [VERCEL_DEPLOYMENT.md](file:///Users/naitikpatidar/Downloads/AI%20MULTI-AGENT%20RESUME%20REJECTION%20&%20IMPROVEMENT%20PLATFORM/VERCEL_DEPLOYMENT.md).
+### 2. Vercel Deployment
+Deploying to Vercel is turnkey using the pre-configured root `vercel.json`:
 
 ```bash
-# Deploy to Vercel using the Vercel CLI
+# Install Vercel CLI (if not already installed)
 npm i -g vercel
+
+# Deploy directly from repository root
 vercel
 ```
+
+The root `vercel.json` automatically builds the React 19 frontend into `frontend/dist` and routes serverless API requests to `/api/index.py`.
 
 ---
 
