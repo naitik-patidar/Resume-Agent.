@@ -200,7 +200,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     onClick={onNavigateToProject}
                     className="inline-flex items-center space-x-2.5 px-6 py-3.5 bg-black hover:bg-slate-800 text-white font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] transition-all"
                   >
-                    <span>Launch Agent Application</span>
+                    <span>Launch Agent Workplace</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
 
@@ -316,7 +316,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 EXHAUSTIVE AGENT DOSSIER
               </div>
               <h2 className="text-3xl sm:text-4xl font-black text-black tracking-tight">
-                services we offer
+                Agent Task & Work
               </h2>
               <p className="text-sm text-slate-700 font-medium mt-1">
                 Here is what each of our 7 sequential agents rigorously checks during the audit:
@@ -327,7 +327,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               onClick={onNavigateToProject}
               className="inline-flex items-center space-x-1.5 text-xs font-black uppercase text-black hover:underline"
             >
-              <span>Test All 7 in Application</span>
+              <span>Test All 7 in Workplace</span>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -458,7 +458,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 onClick={onNavigateToProject}
                 className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-2.5 bg-black text-white font-black text-sm rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:bg-slate-800 transition-all"
               >
-                <span>Launch Application</span>
+                <span>Launch Workplace</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

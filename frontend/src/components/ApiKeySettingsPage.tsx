@@ -12,7 +12,6 @@ import {
   RotateCcw,
   ArrowRight,
   Check,
-  Server,
   Terminal,
 } from 'lucide-react';
 import {
@@ -20,7 +19,6 @@ import {
   saveUserSettings,
   clearUserSettings,
   verifyApiKey,
-  testBackendHealth,
   DEFAULT_SETTINGS,
 } from '../services/api';
 import { UserSettings, VerifyKeyResponse } from '../types';
@@ -34,15 +32,6 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
   const [keyType, setKeyType] = useState<'public' | 'ollama'>('public');
   const [showKey, setShowKey] = useState<boolean>(false);
 
-  // Advanced backend URL setting
-  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
-  const [apiBaseUrl, setApiBaseUrl] = useState<string>('');
-  const [backendTestStatus, setBackendTestStatus] = useState<{
-    testing: boolean;
-    success?: boolean;
-    message?: string;
-  }>({ testing: false });
-
   // Verification state
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [verificationResult, setVerificationResult] = useState<VerifyKeyResponse | null>(null);
@@ -52,7 +41,6 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
   useEffect(() => {
     const current = getUserSettings();
     setSettings(current);
-    setApiBaseUrl(current.apiBaseUrl || '');
     if (current.provider === 'ollama') {
       setKeyType('ollama');
     } else {
@@ -135,30 +123,8 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
     }
   };
 
-  const handleTestBackend = async () => {
-    setBackendTestStatus({ testing: true });
-    try {
-      const res = await testBackendHealth(apiBaseUrl.trim() || undefined);
-      setBackendTestStatus({
-        testing: false,
-        success: true,
-        message: `Connected successfully: ${res.project || 'AI Resume Platform'} (Health: ${res.status})`,
-      });
-    } catch (err: unknown) {
-      setBackendTestStatus({
-        testing: false,
-        success: false,
-        message: err instanceof Error ? err.message : 'Failed to reach backend endpoint',
-      });
-    }
-  };
-
   const handleSave = () => {
-    const updated: UserSettings = {
-      ...settings,
-      apiBaseUrl: apiBaseUrl.trim() || undefined,
-    };
-    saveUserSettings(updated);
+    saveUserSettings(settings);
     setSaveSuccess(true);
     setTimeout(() => {
       setSaveSuccess(false);
@@ -172,7 +138,6 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
     clearUserSettings();
     setSettings(DEFAULT_SETTINGS);
     setKeyType('public');
-    setApiBaseUrl('');
     setVerificationResult(null);
   };
 
@@ -448,48 +413,6 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
             </p>
           </div>
 
-          {/* Advanced Custom Backend Toggle */}
-          <div className="mt-6 pt-4 border-t border-black/20">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-xs font-bold text-slate-600 hover:text-black underline flex items-center space-x-1"
-            >
-              <Server className="w-3.5 h-3.5" />
-              <span>{showAdvanced ? 'Hide Advanced Backend Settings' : 'Advanced: Configure Custom Backend URL'}</span>
-            </button>
-
-            {showAdvanced && (
-              <div className="mt-3 p-4 rounded-xl bg-[#FAF6F0] border border-black/60 space-y-2 text-xs">
-                <p className="text-slate-700 font-medium">
-                  If this frontend is hosted on Vercel and your backend is deployed elsewhere (e.g. Render, Railway, or localhost), specify the base URL here:
-                </p>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={apiBaseUrl}
-                    onChange={(e) => setApiBaseUrl(e.target.value)}
-                    placeholder="e.g. https://my-backend.onrender.com/api"
-                    className="flex-1 px-3 py-2 bg-white border border-black rounded-lg font-mono text-xs text-black"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleTestBackend}
-                    disabled={backendTestStatus.testing}
-                    className="px-3.5 py-2 bg-black text-white rounded-lg font-bold text-xs"
-                  >
-                    {backendTestStatus.testing ? 'Testing...' : 'Test Backend'}
-                  </button>
-                </div>
-                {backendTestStatus.message && (
-                  <p className={`font-mono text-[11px] ${backendTestStatus.success ? 'text-emerald-800' : 'text-rose-800'}`}>
-                    {backendTestStatus.message}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
           {/* Action Buttons: Save & Reset */}
           <div className="mt-8 pt-6 border-t-2 border-black flex flex-col sm:flex-row items-center justify-between gap-3">
             <button
@@ -517,7 +440,7 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
                   onClick={onNavigateToProject}
                   className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-6 py-3 bg-black hover:bg-slate-800 text-white font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all"
                 >
-                  <span>Go to Application</span>
+                  <span>Go to Workplace</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}

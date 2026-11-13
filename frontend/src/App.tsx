@@ -47,10 +47,10 @@ export function App() {
                 <div>
                   <div className="flex items-center space-x-2">
                     <span className="px-2 py-0.5 rounded-md bg-[#FEF08A] border border-black text-[10px] font-black uppercase">
-                      ACTIVE PROJECT
+                      ACTIVE WORKPLACE
                     </span>
                     <h2 className="text-base font-black text-black">
-                      Adversarial Resume Audit & Improvement Pipeline
+                      Adversarial Resume Audit & Improvement Workplace
                     </h2>
                   </div>
                   <p className="text-xs text-slate-700 font-medium mt-0.5">
@@ -95,7 +95,7 @@ export function App() {
               Home
             </button>
             <button onClick={() => handleTabChange('project')} className="hover:text-black hover:underline">
-              Project Application
+              Workplace
             </button>
             <button onClick={() => handleTabChange('api-key')} className="hover:text-black hover:underline">
               Submit API Key

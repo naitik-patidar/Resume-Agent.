@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <FolderGit2 className="w-3.5 h-3.5" />
-              <span>projects</span>
+              <span>workplace</span>
               <span className="hidden md:inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </button>
 
