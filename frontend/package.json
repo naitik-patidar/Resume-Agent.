@@ -1,5 +1,6 @@
 {
   "name": "ai-resume-rejection-platform-frontend",
+  "description": "Adversarial multi-agent resume rejection & truthful improvement platform.",
   "private": true,
   "version": "1.0.0",
   "type": "module",
