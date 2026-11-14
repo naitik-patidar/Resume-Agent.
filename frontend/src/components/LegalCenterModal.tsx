@@ -266,10 +266,10 @@ export const LegalCenterModal: React.FC<LegalCenterModalProps> = ({
 
               <section className="space-y-3">
                 <h4 className="text-sm font-black text-black uppercase tracking-wider border-b border-black/20 pb-1">
-                  4. Anti-Hallucination Policy & Candidate Responsibility
+                  4. Factual Verification Policy & Candidate Responsibility
                 </h4>
                 <p>
-                  The platform implements a deterministic Factual Verification Release Gate (CON-005) designed to prevent AI hallucinations. However, you acknowledge that:
+                  The platform implements a deterministic Factual Verification Release Gate (CON-005) designed to prevent ungrounded AI fabrications. However, you acknowledge that:
                 </p>
                 <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm">
                   <li>You are solely responsible for verifying that every statement on your final exported resume is factually accurate and truthful.</li>

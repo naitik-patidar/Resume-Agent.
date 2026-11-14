@@ -3,6 +3,7 @@ import { Header, NavigationTab } from './components/Header';
 import { HomePage } from './components/HomePage';
 import { ResumeAuditWidget } from './components/ResumeAuditWidget';
 import { ApiKeySettingsPage } from './components/ApiKeySettingsPage';
+import { ApiKeyPromptModal } from './components/ApiKeyPromptModal';
 import { LegalCenterModal, LegalTab } from './components/LegalCenterModal';
 import { getUserSettings } from './services/api';
 import { UserSettings } from './types';
@@ -23,10 +24,22 @@ export function App() {
   const [userSettings, setUserSettings] = useState<UserSettings>(() => getUserSettings());
   const [isLegalOpen, setIsLegalOpen] = useState<boolean>(false);
   const [legalInitialTab, setLegalInitialTab] = useState<LegalTab>('terms');
+  const [isApiKeyPromptOpen, setIsApiKeyPromptOpen] = useState<boolean>(false);
 
   // Refresh settings when switching tabs
-  const handleTabChange = (tab: NavigationTab) => {
-    setUserSettings(getUserSettings());
+  const handleTabChange = (tab: NavigationTab, bypassKeyCheck: boolean = false) => {
+    const currentSettings = getUserSettings();
+    setUserSettings(currentSettings);
+
+    // Prompt for API key when navigating to Workplace without a configured key
+    if (tab === 'project' && !bypassKeyCheck) {
+      const hasKey = Boolean(currentSettings?.apiKey && currentSettings.apiKey.trim());
+      if (!hasKey) {
+        setIsApiKeyPromptOpen(true);
+        return;
+      }
+    }
+
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -41,7 +54,7 @@ export function App() {
   }, [activeTab]);
 
   return (
-    <div className="w-full min-h-screen bg-[#FAF6F0] text-slate-900 flex flex-col font-sans selection:bg-[#C9B7F5] selection:text-black">
+    <div className="w-full min-h-screen bg-[#FAF6F0] text-slate-900 flex flex-col font-sans selection:bg-[#C9B7F5] selection:text-black overflow-x-hidden">
       {/* Neo-brutalist navigation header */}
       <Header
         activeTab={activeTab}
@@ -126,7 +139,7 @@ export function App() {
               </div>
 
               <p className="text-xs text-slate-700 font-medium leading-relaxed">
-                Empowering candidates through hostile hiring simulations and truthful factual resume rewrites with zero hallucination.
+                Empowering candidates through hostile hiring simulations and truthful factual resume rewrites with verified evidence.
               </p>
 
               {/* Compliance Pills */}
@@ -340,6 +353,20 @@ export function App() {
         isOpen={isLegalOpen}
         initialTab={legalInitialTab}
         onClose={() => setIsLegalOpen(false)}
+      />
+
+      {/* Small Square-Shaped API Key Prompt Window */}
+      <ApiKeyPromptModal
+        isOpen={isApiKeyPromptOpen}
+        onClose={() => setIsApiKeyPromptOpen(false)}
+        onSubmitApiKey={() => {
+          setIsApiKeyPromptOpen(false);
+          handleTabChange('api-key');
+        }}
+        onContinueWithoutKey={() => {
+          setIsApiKeyPromptOpen(false);
+          handleTabChange('project', true);
+        }}
       />
     </div>
   );

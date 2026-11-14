@@ -59,7 +59,7 @@ const AGENTS: AgentCardInfo[] = [
     bgColor: 'bg-[#DDF282]', // Lime Green
     textColor: 'text-lime-950',
     icon: <Calculator className="w-5 h-5 text-black" />,
-    tags: ['Hallucination Detection', 'Math Baselines', 'Metric Grounding'],
+    tags: ['Metric Verification', 'Math Baselines', 'Metric Grounding'],
   },
   {
     id: 'ownership',
@@ -125,13 +125,13 @@ const AGENTS: AgentCardInfo[] = [
     id: 'rewriter',
     phase: 'Bonus Agent',
     name: 'Provenance-Gated Rewriter',
-    shortDesc: 'Rewrites flagged bullets with zero hallucinations and full release gate.',
+    shortDesc: 'Rewrites flagged bullets with verified factual provenance and full release gate.',
     detailedRole:
       'Generates improved line-by-line bullet rewrites backed by strict factual provenance. Enforces an automated mathematical release gate: any unverified metric or claim is rejected and must be confirmed.',
     bgColor: 'bg-[#A7F3D0]', // Mint Emerald
     textColor: 'text-emerald-950',
     icon: <RefreshCw className="w-5 h-5 text-black" />,
-    tags: ['Zero Hallucination', 'Release Gate Engine', 'Side-by-Side Diff'],
+    tags: ['Factual Verification', 'Release Gate Engine', 'Side-by-Side Diff'],
   },
 ];
 
@@ -195,10 +195,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </p>
 
                 {/* Action Buttons Row */}
-                <div className="pt-2 flex flex-wrap items-center gap-3">
+                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <button
                     onClick={onNavigateToProject}
-                    className="inline-flex items-center space-x-2.5 px-6 py-3.5 bg-black hover:bg-slate-800 text-white font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] transition-all"
+                    className="w-full sm:w-auto inline-flex items-center justify-center space-x-2.5 px-6 py-3.5 bg-black hover:bg-slate-800 text-white font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] transition-all"
                   >
                     <span>Launch Agent Workplace</span>
                     <ArrowRight className="w-4 h-4" />
@@ -206,14 +206,14 @@ export const HomePage: React.FC<HomePageProps> = ({
 
                   <button
                     onClick={onNavigateToApiKey}
-                    className="inline-flex items-center space-x-2 px-5 py-3.5 bg-white hover:bg-slate-50 text-black font-black text-sm rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all"
+                    className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-3.5 bg-white hover:bg-slate-50 text-black font-black text-sm rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all"
                   >
                     <Key className="w-4 h-4 text-slate-700" />
                     <span>Submit Your API Key</span>
                   </button>
                 </div>
 
-                <div className="flex items-center space-x-4 pt-1 text-xs font-semibold text-slate-600">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1 text-xs font-semibold text-slate-600">
                   <span className="flex items-center space-x-1">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     <span>100% Free & Open Source</span>
@@ -221,7 +221,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <span>•</span>
                   <span className="flex items-center space-x-1">
                     <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Zero Hallucination Gate</span>
+                    <span>Strict Factual Provenance</span>
                   </span>
                 </div>
               </div>
@@ -288,7 +288,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                       </span>
                     </div>
                     <span className="text-[10px] font-bold text-slate-800">
-                      Zero Hallucination
+                      Factual Verification
                     </span>
                   </div>
                 </div>
@@ -477,8 +477,8 @@ export const HomePage: React.FC<HomePageProps> = ({
               Compare shallow keyword matchers with our multi-agent adversarial simulation:
             </p>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-medium border-collapse">
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <table className="min-w-[500px] w-full text-left text-xs font-medium border-collapse">
                 <thead>
                   <tr className="border-b-2 border-black text-black font-black">
                     <th className="py-2.5 px-3">Feature</th>
@@ -501,12 +501,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                     </td>
                   </tr>
                   <tr>
-                    <td className="py-3 px-3 font-bold text-black">Hallucination Risk</td>
+                    <td className="py-3 px-3 font-bold text-black">Factual Integrity</td>
                     <td className="py-3 px-3 text-slate-700 border-x-2 border-black">
                       High: Rewriters make up fake metrics & company names
                     </td>
                     <td className="py-3 px-3 font-bold text-emerald-900">
-                      Zero: Mathematical provenance release gate prevents made-up facts
+                      Strict: Mathematical provenance release gate prevents made-up facts
                     </td>
                   </tr>
                   <tr>
@@ -537,17 +537,17 @@ export const HomePage: React.FC<HomePageProps> = ({
         {/* BOTTOM CALL TO ACTION                                    */}
         {/* ======================================================== */}
         <div className="bg-[#FFE2C8] border-2 border-black rounded-3xl p-8 sm:p-12 text-center shadow-[6px_6px_0px_0px_#000] relative">
-          <h2 className="text-3xl sm:text-4xl font-black text-black tracking-tight mb-3">
+          <h2 className="text-2xl sm:text-4xl font-black text-black tracking-tight mb-3">
             Stop guessing. Put your resume through the committee.
           </h2>
-          <p className="text-sm text-slate-800 font-semibold max-w-xl mx-auto mb-6">
+          <p className="text-xs sm:text-sm text-slate-800 font-semibold max-w-xl mx-auto mb-6">
             Get an unsparing score breakdown from all 7 hiring agents and generate a verified, ATS-proof resume in seconds.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
             <button
               onClick={onNavigateToProject}
-              className="px-7 py-3.5 bg-black hover:bg-slate-800 text-white font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] transition-all inline-flex items-center space-x-2"
+              className="w-full sm:w-auto px-7 py-3.5 bg-black hover:bg-slate-800 text-white font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] transition-all inline-flex items-center justify-center space-x-2"
             >
               <span>Audit Resume Now</span>
               <ArrowRight className="w-4 h-4" />
@@ -555,7 +555,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             <button
               onClick={onNavigateToApiKey}
-              className="px-6 py-3.5 bg-white hover:bg-slate-50 text-black font-black text-sm rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all inline-flex items-center space-x-2"
+              className="w-full sm:w-auto px-6 py-3.5 bg-white hover:bg-slate-50 text-black font-black text-sm rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all inline-flex items-center justify-center space-x-2"
             >
               <Key className="w-4 h-4" />
               <span>Configure API Key</span>

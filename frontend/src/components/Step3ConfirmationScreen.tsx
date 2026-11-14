@@ -165,7 +165,7 @@ export const Step3ConfirmationScreen: React.FC<Step3ConfirmationScreenProps> = (
             <span>Ready for 7-Agent Adversarial Committee</span>
           </div>
           <p className="text-xs text-slate-800 font-medium mt-1">
-            Execution runs sequentially in isolated memory steps with zero hallucination guarantee.
+            Execution runs sequentially in isolated memory steps with verified evidence guarantee.
           </p>
         </div>
 

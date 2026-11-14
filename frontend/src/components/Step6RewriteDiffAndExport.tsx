@@ -101,7 +101,7 @@ export const Step6RewriteDiffAndExport: React.FC<Step6RewriteDiffAndExportProps>
           <div>
             <div className="flex items-center space-x-2">
               <span className="font-black text-base text-black">
-                {passedGate ? 'RELEASE GATE: PASSED (ZERO HALLUCINATIONS)' : 'RELEASE GATE: ATTENTION REQUIRED'}
+                {passedGate ? 'RELEASE GATE: PASSED (FACTUAL INTEGRITY VERIFIED)' : 'RELEASE GATE: ATTENTION REQUIRED'}
               </span>
               <span className="px-2 py-0.5 rounded-md bg-black text-white text-[10px] font-black uppercase">
                 v{rewrite.version}
@@ -156,7 +156,8 @@ export const Step6RewriteDiffAndExport: React.FC<Step6RewriteDiffAndExportProps>
           }`}
         >
           <FileText className="w-4 h-4 text-black" />
-          <span>Full Markdown Resume Preview</span>
+          <span className="hidden sm:inline">Full Markdown Resume Preview</span>
+          <span className="sm:hidden">Full Resume</span>
         </button>
 
         <button
@@ -168,7 +169,8 @@ export const Step6RewriteDiffAndExport: React.FC<Step6RewriteDiffAndExportProps>
           }`}
         >
           <Sparkles className="w-4 h-4 text-black" />
-          <span>Line-by-Line Changes ({rewrite.change_set?.length || 0})</span>
+          <span className="hidden sm:inline">Line-by-Line Changes ({rewrite.change_set?.length || 0})</span>
+          <span className="sm:hidden">Changes ({rewrite.change_set?.length || 0})</span>
         </button>
       </div>
 

@@ -110,27 +110,27 @@ export const Step1CandidateInput: React.FC<Step1CandidateInputProps> = ({ onCand
       </div>
 
       {/* Tabs: Option 1 vs Option 2 (Styled to match website UI, no harsh blue!) */}
-      <div className="bg-white border-2 border-black rounded-2xl p-1.5 shadow-[4px_4px_0px_0px_#000] flex gap-2">
+      <div className="bg-white border-2 border-black rounded-2xl p-1.5 shadow-[4px_4px_0px_0px_#000] flex flex-col sm:flex-row gap-2">
         <button
           onClick={() => { setActiveTab('upload'); setErrorMessage(null); }}
-          className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs sm:text-sm font-black transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 sm:py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all ${
             activeTab === 'upload'
               ? 'bg-[#C9B7F5] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
               : 'bg-transparent text-slate-700 hover:text-black hover:bg-slate-100'
           }`}
         >
-          <UploadCloud className="w-4 h-4 text-black" />
+          <UploadCloud className="w-4 h-4 text-black shrink-0" />
           <span>Option 1: Resume Upload (PDF / DOCX)</span>
         </button>
         <button
           onClick={() => { setActiveTab('paste'); setErrorMessage(null); }}
-          className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs sm:text-sm font-black transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 sm:py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all ${
             activeTab === 'paste'
               ? 'bg-[#C9B7F5] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
               : 'bg-transparent text-slate-700 hover:text-black hover:bg-slate-100'
           }`}
         >
-          <Clipboard className="w-4 h-4 text-black" />
+          <Clipboard className="w-4 h-4 text-black shrink-0" />
           <span>Option 2: Paste Professional Experience</span>
         </button>
       </div>

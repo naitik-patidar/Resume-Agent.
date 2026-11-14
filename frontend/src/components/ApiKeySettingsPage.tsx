@@ -458,11 +458,11 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
               <span>Reset to Defaults</span>
             </button>
 
-            <div className="flex items-center space-x-3 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={handleSave}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-7 py-3 bg-[#DDF282] hover:bg-[#d5ed70] text-black font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-7 py-3 bg-[#DDF282] hover:bg-[#d5ed70] text-black font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all"
               >
                 <Check className="w-4 h-4" />
                 <span>{saveSuccess ? 'Saved & Activated!' : 'Save & Activate Key'}</span>
@@ -472,7 +472,7 @@ export const ApiKeySettingsPage: React.FC<ApiKeySettingsPageProps> = ({ onNaviga
                 <button
                   type="button"
                   onClick={onNavigateToProject}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-6 py-3 bg-black hover:bg-slate-800 text-white font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3 bg-black hover:bg-slate-800 text-white font-black text-sm rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] transition-all"
                 >
                   <span>Go to Workplace</span>
                   <ArrowRight className="w-4 h-4" />
